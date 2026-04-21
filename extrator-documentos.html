@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extrator de Documentos — Múltiplos Arquivos</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F3EE;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE8;
+    --border: #D8D4CC;
+    --border2: #C4BFB6;
+    --text: #1A1814;
+    --text2: #6B6760;
+    --text3: #9B9892;
+    --accent: #1A1814;
+    --accent-bg: #1A1814;
+    --accent-text: #F5F3EE;
+    --green: #2D6A4F;
+    --green-bg: #D8F3DC;
+    --red: #9B2335;
+    --red-bg: #FFE0E0;
+    --amber: #92400E;
+    --amber-bg: #FEF3C7;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  header {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: #8BE0A4;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .header-badge {
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(139,224,164,0.2);
+    color: #8BE0A4;
+    border: 1px solid rgba(139,224,164,0.3);
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .page-sub {
+    font-size: 15px;
+    color: var(--text2);
+    margin-bottom: 32px;
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  .card-body { padding: 20px; }
+
+  .upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg);
+    position: relative;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+  }
+
+  .upload-icon { font-size: 32px; margin-bottom: 12px; display: block; }
+  .upload-text { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .upload-hint { font-size: 12px; color: var(--text3); }
+
+  .file-list { margin-top: 16px; max-height: 300px; overflow-y: auto; }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .file-info { flex: 1; }
+  .file-name { font-size: 13px; font-weight: 600; }
+  .file-meta { font-size: 11px; color: var(--text3); }
+  .file-remove { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 4px 8px; }
+  .file-remove:hover { color: var(--red); }
+
+  .extract-btn {
+    width: 100%;
+    margin-top: 20px;
+    background: var(--accent-bg);
+    color: var(--accent-text);
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .extract-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .extract-btn .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .extract-btn.loading .spinner { display: block; }
+  .extract-btn.loading .btn-text { display: none; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--text3);
+    gap: 12px;
+  }
+
+  .field-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .field-row {
+    display: flex;
+    background: var(--surface);
+  }
+
+  .field-key {
+    width: 40%;
+    padding: 9px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+  }
+
+  .field-val {
+    flex: 1;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    word-break: break-word;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .action-btn:hover { background: var(--surface2); }
+  .action-btn.primary { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); }
+
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+  .alert.success { background: var(--green-bg); color: var(--green); }
+  .alert.error { background: var(--red-bg); color: var(--red); }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 12px;
+    display: none;
+  }
+  .progress-bar.show { display: block; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+
+  .ocr-progress {
+    margin-top: 12px;
+    padding: 8px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    font-size: 12px;
+    text-align: center;
+    display: none;
+  }
+  .ocr-progress.show { display: block; }
+
+  .sheet-area {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  .sheet-label {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .debug-text {
+    margin-top: 16px;
+    padding: 12px;
+    background: #1A1814;
+    color: #8BE0A4;
+    border-radius: var(--radius);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+  .debug-text.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-dot"></span>DocExtract + Fibra</div>
+  <span class="header-badge">✦ Múltiplos Arquivos</span>
+</header>
+
+<div class="container">
+  <h1 class="page-title">Extraia Dados de Múltiplos Documentos</h1>
+  <p class="page-sub">Envie vários documentos → O sistema combina todas as informações</p>
+
+  <div class="main-grid">
+    <div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">1. Documentos (RG + CNH + CPF)</span></div>
+        <div class="card-body">
+          <div class="upload-zone" id="drop-zone">
+            <input type="file" id="file-input" accept="image/*,.pdf" multiple>
+            <span class="upload-icon">📄</span>
+            <div class="upload-text">Arraste múltiplos documentos</div>
+            <div class="upload-hint">RG + CNH + CPF + Comprovante + Carteira Trabalho</div>
+          </div>
+          <div class="file-list" id="file-list"></div>
+          <div class="ocr-progress" id="ocr-progress"><span id="ocr-status">🔄 Processando...</span></div>
+          <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          <button class="extract-btn" id="extract-btn" onclick="extractData()" disabled>
+            <div class="spinner"></div>
+            <span class="btn-text">✦ Extrair dados de todos os arquivos</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">2. Dados Combinados</span></div>
+        <div class="card-body">
+          <div class="result-empty" id="result-empty">
+            <span class="result-empty-icon">🔎</span>
+            <span class="result-empty-text">Os dados combinados de todos os documentos aparecerão aqui</span>
+          </div>
+          <div id="result-content" style="display:none;">
+            <div id="alert-box"></div>
+            <div class="field-grid" id="field-grid"></div>
+            <div class="result-actions">
+              <button class="action-btn" onclick="copyJSON()">📋 Copiar JSON</button>
+              <button class="action-btn primary" onclick="fillSheet()">📊 Preencher Planilha</button>
+            </div>
+            <button class="toggle-json" onclick="toggleDebug()" style="margin-top:8px; font-size:11px; background:none; border:none; color:var(--text3); cursor:pointer;">[ ver texto OCR ]</button>
+            <div class="debug-text" id="debug-text"><pre id="debug-content" style="margin:0; white-space:pre-wrap;"></pre></div>
+          </div>
+
+          <div class="sheet-area">
+            <div class="sheet-label">📎 1. Carregue a planilha modelo da Fibra</div>
+            <input type="file" id="sheet-input" accept=".xlsx,.xls" style="font-size:12px; width:100%;">
+            <div style="font-size:11px; color:var(--text3); margin-top:6px;">
+              Use o arquivo "SOLICITAÇÃO DE EMPREGO Fibra.xlsx"
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+var files = [];
+var extractedData = null;
+var lastOcrText = '';
+var templateWorkbook = null;
+var templateSheetName = '';
+
+// ========== FUNÇÃO MODIFICADA: ACEITA MÚLTIPLOS ARQUIVOS ==========
+function addFiles(newFiles) {
+  for (var i = 0; i < newFiles.length; i++) {
+    var f = newFiles[i];
+    // Evita duplicatas
+    var exists = false;
+    for (var j = 0; j < files.length; j++) {
+      if (files[j].name === f.name && files[j].size === f.size) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists) {
+      files.push(f);
+    }
+  }
+  renderFileList();
+  updateExtractBtn();
+}
+
+// ========== FUNÇÃO MODIFICADA: REMOVE UM ARQUIVO ESPECÍFICO ==========
+function removeFile(idx) {
+  files.splice(idx, 1);
+  renderFileList();
+  updateExtractBtn();
+}
+
+// ========== FUNÇÃO MODIFICADA: MOSTRA TODOS OS ARQUIVOS ==========
+function renderFileList() {
+  var list = document.getElementById('file-list');
+  if (!files.length) { list.innerHTML = ''; return; }
+  var html = '';
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    var icon = f.type.includes('pdf') ? '📕' : '🖼️';
+    var size = f.size > 1024*1024 ? (f.size/1024/1024).toFixed(1) + 'MB' : Math.round(f.size/1024) + 'KB';
+    html += '<div class="file-item">' +
+      '<span class="file-icon">' + icon + '</span>' +
+      '<div class="file-info">' +
+        '<div class="file-name">' + escapeHtml(f.name) + '</div>' +
+        '<div class="file-meta">' + size + '</div>' +
+      '</div>' +
+      '<button class="file-remove" onclick="removeFile(' + i + ')">✕</button>' +
+    '</div>';
+  }
+  list.innerHTML = html;
+}
+
+function updateExtractBtn() {
+  document.getElementById('extract-btn').disabled = !files.length;
+}
+
+// Carregar planilha template
+document.getElementById('sheet-input').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var data = new Uint8Array(e.target.result);
+    templateWorkbook = XLSX.read(data, { type: 'array' });
+    templateSheetName = templateWorkbook.SheetNames[0];
+    showToast('✅ Planilha modelo carregada: ' + file.name);
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+var dropZone = document.getElementById('drop-zone');
+var fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  addFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', function(e) { addFiles(Array.from(e.target.files)); fileInput.value = ''; });
+
+// ========== FUNÇÃO MODIFICADA: PROCESSA TODOS OS ARQUIVOS ==========
+async function extractData() {
+  if (!files.length) return;
+  
+  var btn = document.getElementById('extract-btn');
+  var progress = document.getElementById('progress-bar');
+  var fill = document.getElementById('progress-fill');
+  var ocrDiv = document.getElementById('ocr-progress');
+  var ocrStatus = document.getElementById('ocr-status');
+
+  btn.classList.add('loading');
+  btn.disabled = true;
+  progress.classList.add('show');
+  fill.style.width = '5%';
+  ocrDiv.classList.add('show');
+  
+  var combinedText = '';
+  var totalFiles = files.length;
+  
+  for (var idx = 0; idx < totalFiles; idx++) {
+    var file = files[idx];
+    ocrStatus.innerHTML = '🔄 Processando arquivo ' + (idx + 1) + ' de ' + totalFiles + ': ' + escapeHtml(file.name);
+    fill.style.width = (idx / totalFiles) * 50 + '%';
+    
+    try {
+      var imageData = await fileToImageData(file);
+      var result = await Tesseract.recognize(imageData, 'por', {
+        logger: function(m) {
+          if (m.status === 'recognizing text') {
+            var pct = 50 + (idx / totalFiles) * 40 + (m.progress * 40 / totalFiles);
+            fill.style.width = pct + '%';
+            ocrStatus.innerHTML = '📖 OCR ' + (idx + 1) + '/' + totalFiles + ': ' + Math.round(m.progress * 100) + '%';
+          }
+        }
+      });
+      combinedText += '\n\n--- ' + file.name + ' ---\n' + result.data.text;
+    } catch(err) {
+      console.error('Erro no arquivo ' + file.name, err);
+      combinedText += '\n\n--- ' + file.name + ' (ERRO) ---\n';
+    }
+  }
+  
+  lastOcrText = combinedText;
+  fill.style.width = '95%';
+  ocrStatus.innerHTML = '✅ Combinando dados de ' + totalFiles + ' arquivos...';
+  
+  extractedData = extractWithRegex(lastOcrText);
+  fill.style.width = '100%';
+  
+  setTimeout(function() {
+    progress.classList.remove('show');
+    ocrDiv.classList.remove('show');
+    renderResult(extractedData);
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }, 300);
+}
+
+async function fileToImageData(file) {
+  return new Promise(function(resolve, reject) {
+    if (file.type === 'application/pdf') {
+      var reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          var pdfData = new Uint8Array(e.target.result);
+          var pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+          var page = await pdf.getPage(1);
+          var viewport = page.getViewport({ scale: 2.0 });
+          var canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+          resolve(canvas);
+        } catch(err) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve(canvas);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    }
+  });
+}
+
+function extractWithRegex(texto) {
+  var data = {};
+  if (!texto) return data;
+  
+  texto = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  texto = texto.toUpperCase();
+  
+  // NOME
+  var patterns = [
+    /NOME[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/,
+    /NOME COMPLETO[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/,
+    /([A-Z]{2,}\s+[A-Z]{2,}\s+[A-Z]{2,})/
+  ];
+  for (var i = 0; i < patterns.length; i++) {
+    var match = texto.match(patterns[i]);
+    if (match && match[1] && match[1].length > 10) {
+      data.nome = capitalizar(match[1]);
+      break;
+    }
+  }
+  
+  // CPF
+  var cpfMatch = texto.match(/(?:CPF|CIC)[:\s]*([0-9]{3}\.?[0-9]{3}\.?[0-9]{3}-?[0-9]{2})/);
+  if (cpfMatch) data.cpf = cpfMatch[1].replace(/[.-]/g, '');
+  
+  // RG
+  var rgMatch = texto.match(/(?:RG|IDENTIDADE|REGISTRO GERAL)[:\s]*([0-9]{2,}\.?[0-9]{3,}\.?[0-9]{3,}[0-9X]?)/);
+  if (rgMatch) data.rg = rgMatch[1].replace(/[.-]/g, '');
+  
+  // DATA NASCIMENTO
+  var dataMatch = texto.match(/(?:DATA[:\s]*NASCIMENTO|NASCIMENTO|NASC)[:\s]*([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})/);
+  if (dataMatch) data.data_nascimento = dataMatch[1];
+  
+  // ÓRGÃO EMISSOR
+  var orgaoMatch = texto.match(/(?:ORGAO|ORG[AO]?)[:\s]*EMISSOR[:\s]*([A-Z]{2,6})/i);
+  if (orgaoMatch) data.orgao_emissor = orgaoMatch[1].toUpperCase();
+  
+  // DATA EMISSÃO
+  var emissaoMatch = texto.match(/(?:DATA[:\s]*EMISSAO|EXPEDICAO)[:\s]*([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})/);
+  if (emissaoMatch) data.data_emissao = emissaoMatch[1];
+  
+  // NATURALIDADE
+  var natMatch = texto.match(/(?:NATURALIDADE|LOCAL[:\s]*NASCIMENTO)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){1,3})/);
+  if (natMatch) data.naturalidade = capitalizar(natMatch[1]);
+  
+  // NACIONALIDADE
+  var nacMatch = texto.match(/(?:NACIONALIDADE)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,})*)/);
+  if (nacMatch) data.nacionalidade = capitalizar(nacMatch[1]);
+  
+  // ENDEREÇO
+  var endMatch = texto.match(/(?:ENDERE[CÇ]O|END)[:\s]*([A-Z0-9]{2,}(?:\s+[A-Z0-9]{2,}){3,})/);
+  if (endMatch) data.endereco = capitalizar(endMatch[1].substring(0, 80));
+  
+  // TELEFONE
+  var telMatch = texto.match(/(?:TELEFONE|FONE|TEL|CELULAR)[:\s]*\(?([0-9]{2})\)?[.\s-]?([0-9]{4,5}[.-]?[0-9]{4})/);
+  if (telMatch) data.telefone = '(' + telMatch[1] + ') ' + telMatch[2];
+  
+  // CTPS
+  var ctpsMatch = texto.match(/(?:CTPS|CARTEIRA[:\s]*TRABALHO)[:\s]*([0-9]{4,})/);
+  if (ctpsMatch) data.ctps_numero = ctpsMatch[1];
+  
+  // PIS
+  var pisMatch = texto.match(/(?:PIS|PIS\/PASEP|NIT)[:\s]*([0-9]{11})/);
+  if (pisMatch) data.pis = pisMatch[1];
+  
+  // PROFISSÃO
+  var profMatch = texto.match(/(?:PROFISSAO|FUNCAO|CARGO)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){1,5})/);
+  if (profMatch) data.profissao = capitalizar(profMatch[1]);
+  
+  // PAI
+  var paiMatch = texto.match(/(?:PAI|FILIACAO[:\s]*1)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/);
+  if (paiMatch) data.nome_pai = capitalizar(paiMatch[1]);
+  
+  // MÃE
+  var maeMatch = texto.match(/(?:MAE|MÃE|FILIACAO[:\s]*2)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/);
+  if (maeMatch) data.nome_mae = capitalizar(maeMatch[1]);
+  
+  return data;
+}
+
+function capitalizar(str) {
+  if (!str) return '';
+  str = str.toLowerCase();
+  return str.replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+}
+
+function renderResult(data) {
+  document.getElementById('result-empty').style.display = 'none';
+  document.getElementById('result-content').style.display = 'block';
+  
+  var count = Object.keys(data).filter(function(k) { return data[k] && data[k] !== ''; }).length;
+  document.getElementById('alert-box').innerHTML = '<div class="alert success">✓ Extração concluída de ' + files.length + ' arquivo(s)! ' + count + ' campos encontrados.</div>';
+  
+  var grid = document.getElementById('field-grid');
+  var rows = '';
+  for (var key in data) {
+    if (data[key]) {
+      rows += '<div class="field-row"><div class="field-key">' + key.replace(/_/g, ' ').toUpperCase() + '</div><div class="field-val">' + escapeHtml(data[key]) + '</div></div>';
+    }
+  }
+  grid.innerHTML = rows || '<div style="padding:20px;text-align:center;color:var(--text3);">Nenhum dado encontrado</div>';
+  document.getElementById('debug-content').textContent = lastOcrText || 'Nenhum texto OCR disponível';
+}
+
+function fillSheet() {
+  if (!extractedData || Object.keys(extractedData).length === 0) {
+    showToast('❌ Extraia os dados primeiro!');
+    return;
+  }
+  
+  if (!templateWorkbook) {
+    showToast('❌ Carregue a planilha modelo da Fibra primeiro!');
+    return;
+  }
+  
+  var originalSheet = templateWorkbook.Sheets[templateSheetName];
+  var newSheet = {};
+  
+  for (var cell in originalSheet) {
+    if (cell[0] !== '!') {
+      newSheet[cell] = JSON.parse(JSON.stringify(originalSheet[cell]));
+    }
+  }
+  
+  if (originalSheet['!ref']) newSheet['!ref'] = originalSheet['!ref'];
+  if (originalSheet['!cols']) newSheet['!cols'] = originalSheet['!cols'];
+  if (originalSheet['!rows']) newSheet['!rows'] = originalSheet['!rows'];
+  if (originalSheet['!merges']) newSheet['!merges'] = originalSheet['!merges'];
+  
+  // Preenche os campos
+  var cellMapping = {
+    'NOME': 'C3', 'ENDEREÇO': 'C4', 'CEP': 'C5', 'BAIRRO': 'E5',
+    'ESTADO': 'G5', 'TELEFONES': 'C6', 'CPF': 'I15', 'RG': 'I10',
+    'DATA NASCIMENTO': 'C7', 'LOCAL DE NASCIMENTO': 'F7', 'NACIONALIDADE': 'E9',
+    'ESTADO CIVIL': 'C9', 'FUNÇÃO': 'C11', 'PAI': 'C14', 'MÃE': 'C15',
+    'CTPS NÚMERO': 'I5', 'PIS': 'I28'
+  };
+  
+  for (var campo in cellMapping) {
+    var valor = '';
+    if (campo === 'NOME') valor = extractedData.nome;
+    else if (campo === 'ENDEREÇO') valor = extractedData.endereco;
+    else if (campo === 'CEP') valor = extractedData.cep;
+    else if (campo === 'BAIRRO') valor = extractedData.bairro;
+    else if (campo === 'ESTADO') valor = extractedData.estado;
+    else if (campo === 'TELEFONES') valor = extractedData.telefone;
+    else if (campo === 'CPF') valor = extractedData.cpf;
+    else if (campo === 'RG') valor = extractedData.rg;
+    else if (campo === 'DATA NASCIMENTO') valor = extractedData.data_nascimento;
+    else if (campo === 'LOCAL DE NASCIMENTO') valor = extractedData.naturalidade;
+    else if (campo === 'NACIONALIDADE') valor = extractedData.nacionalidade;
+    else if (campo === 'ESTADO CIVIL') valor = extractedData.estado_civil;
+    else if (campo === 'FUNÇÃO') valor = extractedData.profissao;
+    else if (campo === 'PAI') valor = extractedData.nome_pai;
+    else if (campo === 'MÃE') valor = extractedData.nome_mae;
+    else if (campo === 'CTPS NÚMERO') valor = extractedData.ctps_numero;
+    else if (campo === 'PIS') valor = extractedData.pis;
+    
+    if (valor && newSheet[cellMapping[campo]]) {
+      newSheet[cellMapping[campo]].v = valor;
+    } else if (valor) {
+      newSheet[cellMapping[campo]] = { t: 's', v: valor };
+    }
+  }
+  
+  var outputWorkbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(outputWorkbook, newSheet, templateSheetName);
+  
+  var timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+  XLSX.writeFile(outputWorkbook, 'solicitacao_preenchida_' + timestamp + '.xlsx');
+  showToast('✅ Planilha preenchida e baixada!');
+}
+
+function copyJSON() {
+  if (!extractedData) return;
+  navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2))
+    .then(function() { showToast('JSON copiado!'); })
+    .catch(function() { showToast('Erro ao copiar'); });
+}
+
+function toggleDebug() {
+  var box = document.getElementById('debug-text');
+  box.classList.toggle('show');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function showToast(msg) {
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent-bg);color:var(--accent-text);padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;z-index:999;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 2000);
+}
+</script>
+</body>
+</html>
