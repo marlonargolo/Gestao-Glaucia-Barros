@@ -3,407 +3,229 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Extrator de Documentos — Múltiplos Arquivos</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>DocExtract PRO — Fibra</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <style>
-  :root {
-    --bg: #F5F3EE;
-    --surface: #FFFFFF;
-    --surface2: #F0EDE8;
-    --border: #D8D4CC;
-    --border2: #C4BFB6;
-    --text: #1A1814;
-    --text2: #6B6760;
-    --text3: #9B9892;
-    --accent: #1A1814;
-    --accent-bg: #1A1814;
-    --accent-text: #F5F3EE;
-    --green: #2D6A4F;
-    --green-bg: #D8F3DC;
-    --red: #9B2335;
-    --red-bg: #FFE0E0;
-    --amber: #92400E;
-    --amber-bg: #FEF3C7;
-    --radius: 10px;
-    --radius-lg: 16px;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Instrument Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 15px;
-    line-height: 1.6;
-  }
-
-  header {
-    background: var(--accent-bg);
-    color: var(--accent-text);
-    padding: 0 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 60px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .logo-dot {
-    width: 8px; height: 8px;
-    background: #8BE0A4;
-    border-radius: 50%;
-    display: inline-block;
-  }
-
-  .header-badge {
-    font-size: 11px;
-    font-weight: 600;
-    background: rgba(139,224,164,0.2);
-    color: #8BE0A4;
-    border: 1px solid rgba(139,224,164,0.3);
-    padding: 3px 10px;
-    border-radius: 999px;
-    letter-spacing: 0.3px;
-  }
-
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-  }
-
-  .page-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -1px;
-    margin-bottom: 8px;
-    line-height: 1.2;
-  }
-
-  .page-sub {
-    font-size: 15px;
-    color: var(--text2);
-    margin-bottom: 32px;
-  }
-
-  .main-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    align-items: start;
-  }
-
-  @media (max-width: 900px) {
-    .main-grid { grid-template-columns: 1fr; }
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-
-  .card-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .card-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
-  }
-
-  .card-body { padding: 20px; }
-
-  .upload-zone {
-    border: 2px dashed var(--border2);
-    border-radius: var(--radius);
-    padding: 32px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--bg);
-    position: relative;
-  }
-
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: var(--accent);
-    background: var(--surface2);
-  }
-
-  .upload-zone input[type="file"] {
-    position: absolute; inset: 0;
-    opacity: 0; cursor: pointer;
-  }
-
-  .upload-icon { font-size: 32px; margin-bottom: 12px; display: block; }
-  .upload-text { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-  .upload-hint { font-size: 12px; color: var(--text3); }
-
-  .file-list { margin-top: 16px; max-height: 300px; overflow-y: auto; }
-  .file-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 12px;
-    margin-bottom: 8px;
-  }
-  .file-info { flex: 1; }
-  .file-name { font-size: 13px; font-weight: 600; }
-  .file-meta { font-size: 11px; color: var(--text3); }
-  .file-remove { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 4px 8px; }
-  .file-remove:hover { color: var(--red); }
-
-  .extract-btn {
-    width: 100%;
-    margin-top: 20px;
-    background: var(--accent-bg);
-    color: var(--accent-text);
-    border: none;
-    border-radius: var(--radius);
-    padding: 14px;
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .extract-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .extract-btn .spinner {
-    width: 16px; height: 16px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: none;
-  }
-  .extract-btn.loading .spinner { display: block; }
-  .extract-btn.loading .btn-text { display: none; }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .result-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 20px;
-    text-align: center;
-    color: var(--text3);
-    gap: 12px;
-  }
-
-  .field-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    background: var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-
-  .field-row {
-    display: flex;
-    background: var(--surface);
-  }
-
-  .field-key {
-    width: 40%;
-    padding: 9px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text2);
-    text-transform: uppercase;
-    background: var(--bg);
-    border-right: 1px solid var(--border);
-  }
-
-  .field-val {
-    flex: 1;
-    padding: 9px 12px;
-    font-size: 13px;
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    word-break: break-word;
-  }
-
-  .result-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
-
-  .action-btn {
-    flex: 1;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .action-btn:hover { background: var(--surface2); }
-  .action-btn.primary { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); }
-
-  .alert {
-    padding: 12px 16px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 16px;
-  }
-  .alert.success { background: var(--green-bg); color: var(--green); }
-  .alert.error { background: var(--red-bg); color: var(--red); }
-
-  .progress-bar {
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 12px;
-    display: none;
-  }
-  .progress-bar.show { display: block; }
-  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
-
-  .ocr-progress {
-    margin-top: 12px;
-    padding: 8px;
-    background: var(--surface2);
-    border-radius: var(--radius);
-    font-size: 12px;
-    text-align: center;
-    display: none;
-  }
-  .ocr-progress.show { display: block; }
-
-  .sheet-area {
-    margin-top: 16px;
-    padding: 16px;
-    background: var(--surface2);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-  }
-
-  .sheet-label {
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-
-  .debug-text {
-    margin-top: 16px;
-    padding: 12px;
-    background: #1A1814;
-    color: #8BE0A4;
-    border-radius: var(--radius);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    max-height: 200px;
-    overflow-y: auto;
-    display: none;
-  }
-  .debug-text.show { display: block; }
+:root{--ink:#0D0D0D;--ink2:#3A3A3A;--ink3:#7A7A7A;--paper:#F8F6F1;--paper2:#EDEAE3;--line:#D4D0C8;--gold:#C9A84C;--gold2:#F0D080;--green:#2A6644;--green-bg:#E8F5EE;--red:#8B1A2A;--red-bg:#FDE8EA;--blue:#1A3A6B;--blue-bg:#E8EEF8;--r:6px;--rlg:12px;--sh:0 2px 12px rgba(0,0,0,.08);--shlg:0 8px 40px rgba(0,0,0,.12)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+header{background:var(--ink);color:var(--paper);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--gold)}
+.lm{display:flex;align-items:center;gap:12px}
+.lmark{width:34px;height:34px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:17px;color:var(--ink);font-weight:700}
+.ltx{font-family:'DM Serif Display',serif;font-size:19px}
+.lsub{font-size:10px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.hbg{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:3px;background:rgba(201,168,76,.15);color:var(--gold2);border:1px solid rgba(201,168,76,.3)}
+.main{max-width:1320px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:1}
+.ph{margin-bottom:36px;padding-bottom:26px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px}
+.pt{font-family:'DM Serif Display',serif;font-size:36px;line-height:1.1;letter-spacing:-1px}
+.pt em{font-style:italic;color:var(--gold)}
+.pd{font-size:13px;color:var(--ink3);margin-top:6px;max-width:450px;line-height:1.7}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+@media(max-width:960px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--rlg);overflow:hidden;box-shadow:var(--sh);transition:box-shadow .2s}
+.card:hover{box-shadow:var(--shlg)}
+.ch{padding:16px 20px 13px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--paper)}
+.chl{display:flex;align-items:center;gap:9px}
+.csnum{width:23px;height:23px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ctit{font-family:'DM Serif Display',serif;font-size:15px}
+.cst{font-size:11px;font-weight:600;letter-spacing:.5px;padding:3px 9px;border-radius:20px}
+.cst.w{background:var(--paper2);color:var(--ink3)}.cst.ok{background:var(--green-bg);color:var(--green)}.cst.err{background:var(--red-bg);color:var(--red)}.cst.proc{background:var(--blue-bg);color:var(--blue)}
+.cb{padding:20px}
+/* API KEY */
+.akey{background:#FFFDF5;border:1px solid rgba(201,168,76,.4);border-radius:var(--r);padding:13px;margin-bottom:16px}
+.akey-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);margin-bottom:7px}
+.akey-row{display:flex;gap:7px}
+.akey-inp{flex:1;padding:8px 11px;border:1px solid var(--line);border-radius:var(--r);font-family:'DM Mono',monospace;font-size:13px;background:#fff;color:var(--ink);outline:none;transition:border-color .2s}
+.akey-inp:focus{border-color:var(--gold)}
+.akey-btn{padding:8px 13px;background:var(--ink);color:var(--paper);border:none;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.akey-btn:hover{background:#222}
+.akey-info{font-size:11px;color:var(--ink3);margin-top:6px;line-height:1.6}
+.akey-info a{color:var(--gold)}
+.msel{margin-top:9px}
+.msel label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--ink2);display:block;margin-bottom:4px}
+.msel select{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:var(--r);font-size:12px;font-family:'DM Mono',monospace;background:#fff;color:var(--ink);outline:none;cursor:pointer}
+.msel select:focus{border-color:var(--gold)}
+/* DROP */
+.dz{position:relative;border:2px dashed var(--line);border-radius:10px;padding:30px 18px;text-align:center;cursor:pointer;background:var(--paper);transition:all .2s}
+.dz:hover,.dz.over{border-color:var(--gold);background:#FFFDF5}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{font-size:32px;margin-bottom:9px;display:block;line-height:1}
+.dz-main{font-weight:600;font-size:14px;margin-bottom:3px}
+.dz-hint{font-size:11px;color:var(--ink3);line-height:1.7}
+.flist{margin-top:12px;display:flex;flex-direction:column;gap:5px;max-height:230px;overflow-y:auto}
+.fi{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r)}
+.ftb{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 5px;border-radius:3px;text-transform:uppercase;flex-shrink:0}
+.pdf{background:#FFE0E0;color:#8B1A2A}.img{background:#E0EAF8;color:#1A3A6B}
+.fn{flex:1;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsz{font-size:11px;color:var(--ink3);font-family:'DM Mono',monospace;flex-shrink:0}
+.fdot{width:8px;height:8px;border-radius:50%;background:var(--line);flex-shrink:0}
+.fdot.ok{background:var(--green)}.fdot.proc{background:var(--gold);animation:pulse 1s infinite}.fdot.err{background:var(--red)}
+.frm{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;padding:2px 5px;border-radius:3px;flex-shrink:0;line-height:1}
+.frm:hover{background:var(--red-bg);color:var(--red)}
+.sub{margin-top:16px;padding:13px;background:linear-gradient(135deg,#FFFDF5,#FFF9E6);border:1px solid rgba(201,168,76,.3);border-radius:var(--r)}
+.sub-lbl{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+.sub-msg{font-size:11px;color:var(--ink3);margin-top:5px;font-style:italic}
+.sub-msg.ok{color:var(--green);font-style:normal;font-weight:500}
+.pw{margin-top:13px;display:none}
+.pw.show{display:block}
+.plbl{font-size:12px;color:var(--ink2);margin-bottom:4px;display:flex;justify-content:space-between}
+.ptrack{height:4px;background:var(--paper2);border-radius:2px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--gold),#E8C060);border-radius:2px;width:0%;transition:width .4s ease}
+.plog{margin-top:5px;font-size:11px;color:var(--ink3);font-family:'DM Mono',monospace;min-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xbtn{width:100%;margin-top:16px;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;letter-spacing:.3px;position:relative;overflow:hidden}
+.xbtn:hover{background:#1A1A1A;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.xbtn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;display:none}
+.xbtn.loading .spin{display:block}
+.xbtn.loading .btxt{display:none}
+.re{text-align:center;padding:48px 18px;color:var(--ink3)}
+.re-icon{font-size:42px;display:block;margin-bottom:13px;opacity:.4}
+.re-txt{font-size:14px;line-height:1.7}
+.sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+.stat{background:var(--paper2);border:1px solid var(--line);border-radius:var(--r);padding:9px;text-align:center}
+.sv{font-family:'DM Serif Display',serif;font-size:21px;color:var(--ink);line-height:1;margin-bottom:2px}
+.sl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);font-weight:600}
+.fw{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:13px;max-height:420px;overflow-y:auto}
+.fsh{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px 11px;background:var(--ink);color:var(--paper)}
+.fr{display:grid;grid-template-columns:135px 1fr;border-bottom:1px solid var(--line)}
+.fr:last-child{border-bottom:none}
+.fr:hover{background:var(--paper)}
+.fk{padding:7px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);background:var(--paper2);border-right:1px solid var(--line);display:flex;align-items:center}
+.fv{padding:7px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--ink);word-break:break-all;outline:none;cursor:text}
+.fv.empty{color:var(--ink3);font-style:italic;font-family:'DM Sans',sans-serif;font-size:12px}
+.fv:focus{background:#FFFDF5;border-left:3px solid var(--gold)}
+.eh{font-size:10px;color:var(--ink3);margin-bottom:6px;text-align:right;font-style:italic}
+.ract{display:flex;gap:7px;flex-wrap:wrap}
+.abtn{flex:1;min-width:100px;padding:9px 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s}
+.abtn:hover{background:var(--paper2);border-color:var(--ink3)}
+.abtn.prim{background:var(--green);color:#fff;border-color:var(--green)}
+.abtn.prim:hover{background:#1E5036}
+.alrt{padding:10px 13px;border-radius:var(--r);font-size:13px;font-weight:500;margin-bottom:13px;line-height:1.5}
+.alrt.ok{background:var(--green-bg);color:var(--green)}.alrt.err{background:var(--red-bg);color:var(--red)}.alrt.warn{background:#FFF8E6;color:#92600A}
+.jtgl{background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);padding:3px 0;font-family:'DM Mono',monospace;text-decoration:underline;margin-top:6px;display:block}
+.jbox{display:none;margin-top:9px;background:#0D0D0D;border-radius:var(--r);padding:13px;max-height:180px;overflow-y:auto}
+.jbox.show,.jbox.open{display:block}
+.jbox pre{font-family:'DM Mono',monospace;font-size:11px;color:#8BE0A4;line-height:1.6;white-space:pre-wrap}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 20px;border-radius:40px;font-size:13px;font-weight:600;z-index:999;border:1px solid var(--gold);box-shadow:var(--shlg);animation:tIn .3s ease;max-width:80vw;text-align:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fadeUp{animation:fadeUp .4s ease forwards}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 </style>
 </head>
 <body>
-
 <header>
-  <div class="logo"><span class="logo-dot"></span>DocExtract + Fibra</div>
-  <span class="header-badge">✦ Múltiplos Arquivos</span>
+  <div class="lm">
+    <div class="lmark">F</div>
+    <div><div class="ltx">DocExtract PRO</div><div class="lsub">Fibra — Solicitação de Emprego</div></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="hbg">✦ Groq Vision AI</span>
+    <span class="hbg">100% Gratuito</span>
+  </div>
 </header>
 
-<div class="container">
-  <h1 class="page-title">Extraia Dados de Múltiplos Documentos</h1>
-  <p class="page-sub">Envie vários documentos → O sistema combina todas as informações</p>
-
-  <div class="main-grid">
+<div class="main">
+  <div class="ph">
     <div>
+      <h1 class="pt">Extração <em>Inteligente</em><br>de Documentos</h1>
+      <p class="pd">Groq + LLaMA 4 Vision (API gratuita) extrai dados com precisão máxima de RGs, CPFs, CTPS e qualquer documento. Planilha Fibra preservada 100%.</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- COLUNA ESQUERDA -->
+    <div>
+      <div class="akey">
+        <div class="akey-lbl">🔑 Chave API Groq (gratuita)</div>
+        <div class="akey-row">
+          <input type="password" class="akey-inp" id="api-key" placeholder="gsk_..." />
+          <button class="akey-btn" onclick="saveKey()">Salvar</button>
+        </div>
+        <div class="msel">
+          <label>Modelo de visão</label>
+          <select id="model-sel">
+            <option value="meta-llama/llama-4-scout-17b-16e-instruct">LLaMA 4 Scout 17B — Recomendado ✦</option>
+            <option value="meta-llama/llama-4-maverick-17b-128e-instruct">LLaMA 4 Maverick 17B — Mais potente</option>
+            <option value="llama-3.2-90b-vision-preview">LLaMA 3.2 90B Vision</option>
+            <option value="llama-3.2-11b-vision-preview">LLaMA 3.2 11B Vision — Mais rápido</option>
+          </select>
+        </div>
+        <div class="akey-info">
+          Chave gratuita: <a href="https://console.groq.com" target="_blank">console.groq.com</a>
+          · Armazenada só nesta sessão · Nunca enviada a terceiros
+        </div>
+      </div>
+
       <div class="card">
-        <div class="card-header"><span class="card-title">1. Documentos (RG + CNH + CPF)</span></div>
-        <div class="card-body">
-          <div class="upload-zone" id="drop-zone">
-            <input type="file" id="file-input" accept="image/*,.pdf" multiple>
-            <span class="upload-icon">📄</span>
-            <div class="upload-text">Arraste múltiplos documentos</div>
-            <div class="upload-hint">RG + CNH + CPF + Comprovante + Carteira Trabalho</div>
+        <div class="ch">
+          <div class="chl"><div class="csnum">1</div><span class="ctit">Documentos do Candidato</span></div>
+          <span class="cst w" id="doc-st">Aguardando</span>
+        </div>
+        <div class="cb">
+          <div class="dz" id="dz">
+            <input type="file" id="fi" accept="image/*,.pdf" multiple />
+            <span class="dz-icon">📂</span>
+            <div class="dz-main">Arraste os documentos aqui</div>
+            <div class="dz-hint">
+              RG frente+verso · CPF · CTPS digital · PIS/Caixa Tem<br>
+              Título Eleitor · Reservista · Comprovante de Endereço<br>
+              JPG · PNG · PDF — múltiplos arquivos simultâneos
+            </div>
           </div>
-          <div class="file-list" id="file-list"></div>
-          <div class="ocr-progress" id="ocr-progress"><span id="ocr-status">🔄 Processando...</span></div>
-          <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-          <button class="extract-btn" id="extract-btn" onclick="extractData()" disabled>
-            <div class="spinner"></div>
-            <span class="btn-text">✦ Extrair dados de todos os arquivos</span>
+          <div class="flist" id="flist"></div>
+          <div class="sub">
+            <div class="sub-lbl">📊 Planilha Fibra Original (.xlsx)</div>
+            <input type="file" id="sheet-in" accept=".xlsx,.xls" style="width:100%;font-size:13px;cursor:pointer" />
+            <div class="sub-msg" id="sheet-msg">Carregue "SOLICITAÇÃO DE EMPREGO Fibra.xlsx"</div>
+          </div>
+          <div class="pw" id="pw">
+            <div class="plbl"><span id="ptxt">Processando...</span><span id="ppct" style="font-family:'DM Mono',monospace;font-size:11px">0%</span></div>
+            <div class="ptrack"><div class="pfill" id="pfill"></div></div>
+            <div class="plog" id="plog"></div>
+          </div>
+          <button class="xbtn" id="xbtn" onclick="runExtraction()" disabled>
+            <div class="spin"></div>
+            <span class="btxt">✦ Extrair Dados com IA</span>
           </button>
         </div>
       </div>
     </div>
 
+    <!-- COLUNA DIREITA -->
     <div>
       <div class="card">
-        <div class="card-header"><span class="card-title">2. Dados Combinados</span></div>
-        <div class="card-body">
-          <div class="result-empty" id="result-empty">
-            <span class="result-empty-icon">🔎</span>
-            <span class="result-empty-text">Os dados combinados de todos os documentos aparecerão aqui</span>
+        <div class="ch">
+          <div class="chl"><div class="csnum">2</div><span class="ctit">Dados Extraídos</span></div>
+          <span class="cst w" id="res-st">Aguardando extração</span>
+        </div>
+        <div class="cb">
+          <div class="re" id="re">
+            <span class="re-icon">🔍</span>
+            <span class="re-txt">Os dados aparecerão aqui organizados.<br><strong>Clique em qualquer campo</strong> para editar antes de gerar.</span>
           </div>
-          <div id="result-content" style="display:none;">
-            <div id="alert-box"></div>
-            <div class="field-grid" id="field-grid"></div>
-            <div class="result-actions">
-              <button class="action-btn" onclick="copyJSON()">📋 Copiar JSON</button>
-              <button class="action-btn primary" onclick="fillSheet()">📊 Preencher Planilha</button>
+          <div id="rc" style="display:none">
+            <div id="al"></div>
+            <div class="sbar" id="sbar" style="display:none">
+              <div class="stat"><div class="sv" id="st-total">0</div><div class="sl">Campos</div></div>
+              <div class="stat"><div class="sv" id="st-filled">0</div><div class="sl">Preenchidos</div></div>
+              <div class="stat"><div class="sv" id="st-files">0</div><div class="sl">Arquivos</div></div>
+              <div class="stat"><div class="sv" id="st-conf">—</div><div class="sl">Confiança</div></div>
             </div>
-            <button class="toggle-json" onclick="toggleDebug()" style="margin-top:8px; font-size:11px; background:none; border:none; color:var(--text3); cursor:pointer;">[ ver texto OCR ]</button>
-            <div class="debug-text" id="debug-text"><pre id="debug-content" style="margin:0; white-space:pre-wrap;"></pre></div>
-          </div>
-
-          <div class="sheet-area">
-            <div class="sheet-label">📎 1. Carregue a planilha modelo da Fibra</div>
-            <input type="file" id="sheet-input" accept=".xlsx,.xls" style="font-size:12px; width:100%;">
-            <div style="font-size:11px; color:var(--text3); margin-top:6px;">
-              Use o arquivo "SOLICITAÇÃO DE EMPREGO Fibra.xlsx"
+            <div class="eh">💡 Clique em qualquer valor para editar</div>
+            <div class="fw" id="fw"></div>
+            <div class="ract">
+              <button class="abtn" onclick="copyJSON()">📋 JSON</button>
+              <button class="abtn" onclick="toggleRaw()">📄 OCR</button>
+              <button class="abtn prim" onclick="fillSheet()">📊 Preencher Planilha</button>
             </div>
+            <button class="jtgl" onclick="toggleJSON()">[ ver JSON bruto ]</button>
+            <div class="jbox" id="jbox"><pre id="jcon"></pre></div>
+            <div class="jbox" id="rbox"><pre id="rcon" style="color:#7FC8F8"></pre></div>
           </div>
         </div>
       </div>
@@ -412,381 +234,219 @@
 </div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+var files=[], origWb=null, origSheetName='', extracted={}, rawTexts=[], apiKey='';
 
-var files = [];
-var extractedData = null;
-var lastOcrText = '';
-var templateWorkbook = null;
-var templateSheetName = '';
+var FL={nome:'Nome Completo',cpf:'CPF',data_nascimento:'Data Nascimento',local_nascimento:'Local Nascimento',estado_nascimento:'Estado Nasc.',nacionalidade:'Nacionalidade',estado_civil:'Estado Civil',escolaridade:'Escolaridade',rg_numero:'RG — Número',rg_orgao_emissor:'RG — Órgão Emissor',rg_data_emissao:'RG — Data Emissão',ctps_numero:'CTPS — Número',ctps_serie:'CTPS — Série',ctps_uf:'CTPS — UF',pis_numero:'PIS/NIS',titulo_eleitor:'Título Eleitor',titulo_zona:'Título — Zona',titulo_secao:'Título — Seção',reservista_numero:'Reservista — Nº',reservista_serie:'Reservista — Série',reservista_categoria:'Reservista — Cat.',endereco:'Endereço',cep:'CEP',bairro:'Bairro',cidade:'Cidade',estado:'Estado (UF)',telefone:'Telefone',nome_pai:'Nome do Pai',nome_mae:'Nome da Mãe',funcao:'Função',banco:'Banco',agencia:'Agência',conta:'Conta Corrente'};
+var FS={'IDENTIFICAÇÃO':['nome','cpf','data_nascimento','local_nascimento','estado_nascimento','nacionalidade','estado_civil','escolaridade'],'DOCUMENTOS':['rg_numero','rg_orgao_emissor','rg_data_emissao','ctps_numero','ctps_serie','ctps_uf','pis_numero','titulo_eleitor','titulo_zona','titulo_secao','reservista_numero','reservista_serie','reservista_categoria'],'CONTATO & ENDEREÇO':['endereco','cep','bairro','cidade','estado','telefone'],'FILIAÇÃO':['nome_pai','nome_mae'],'TRABALHO & BANCO':['funcao','banco','agencia','conta']};
 
-// ========== FUNÇÃO MODIFICADA: ACEITA MÚLTIPLOS ARQUIVOS ==========
-function addFiles(newFiles) {
-  for (var i = 0; i < newFiles.length; i++) {
-    var f = newFiles[i];
-    // Evita duplicatas
-    var exists = false;
-    for (var j = 0; j < files.length; j++) {
-      if (files[j].name === f.name && files[j].size === f.size) {
-        exists = true;
-        break;
+window.onload=function(){var k=sessionStorage.getItem('groq_key');if(k){document.getElementById('api-key').value=k;apiKey=k;}};
+function saveKey(){apiKey=document.getElementById('api-key').value.trim();if(apiKey){sessionStorage.setItem('groq_key',apiKey);toast('✅ Chave Groq salva');}else toast('⚠️ Insira uma chave válida');}
+
+var dz=document.getElementById('dz');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',function(){dz.classList.remove('over')});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');addFiles(Array.from(e.dataTransfer.files))});
+document.getElementById('fi').addEventListener('change',function(e){addFiles(Array.from(e.target.files));e.target.value=''});
+document.getElementById('sheet-in').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){origWb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});origSheetName=origWb.SheetNames[0];var m=document.getElementById('sheet-msg');m.textContent='✅ '+f.name;m.className='sub-msg ok';};
+  r.readAsArrayBuffer(f);
+});
+
+function addFiles(nf){nf.forEach(function(f){if(!files.some(function(x){return x.name===f.name&&x.size===f.size}))files.push(f);});renderFiles();updateBtn();if(files.length)setSt('doc-st','ok',files.length+' arquivo(s)');}
+function removeFile(i){files.splice(i,1);renderFiles();updateBtn();if(!files.length)setSt('doc-st','w','Aguardando');}
+function renderFiles(){var el=document.getElementById('flist');if(!files.length){el.innerHTML='';return;}el.innerHTML=files.map(function(f,i){var isPdf=f.type==='application/pdf';var sz=f.size>1048576?(f.size/1048576).toFixed(1)+'MB':Math.round(f.size/1024)+'KB';return'<div class="fi"><span class="ftb '+(isPdf?'pdf':'img')+'">'+(isPdf?'PDF':'IMG')+'</span><span class="fn" title="'+esc(f.name)+'">'+esc(f.name)+'</span><span class="fsz">'+sz+'</span><div class="fdot" id="fd'+i+'"></div><button class="frm" onclick="removeFile('+i+')">✕</button></div>';}).join('');}
+function updateBtn(){document.getElementById('xbtn').disabled=!files.length;}
+
+async function runExtraction(){
+  apiKey=document.getElementById('api-key').value.trim();
+  if(!apiKey){toast('⚠️ Insira a chave API Groq primeiro');return;}
+  if(!files.length){toast('⚠️ Adicione documentos');return;}
+  var btn=document.getElementById('xbtn');
+  btn.classList.add('loading');btn.disabled=true;
+  showPw(true,'Iniciando...',0);setSt('res-st','proc','Processando...');
+  rawTexts=[];extracted={};
+  for(var i=0;i<files.length;i++){
+    var f=files[i];setFd(i,'proc');
+    showPw(true,'Convertendo: '+f.name,Math.round(i/files.length*20));
+    try{
+      var pages=await fileToPages(f);
+      for(var p=0;p<pages.length;p++){
+        setPlog('🤖 '+f.name+(pages.length>1?' p.'+(p+1):'')+' → Groq Vision...');
+        showPw(true,'Analisando: '+f.name+(pages.length>1?' p.'+(p+1)+'/'+pages.length:''),Math.round(20+(i/files.length)*60+(p/pages.length)*(60/files.length)));
+        var res=await callGroq(pages[p].b64,pages[p].type,f.name,p+1);
+        rawTexts.push({file:f.name,page:p+1,text:res.raw});
+        for(var k in res.data){var v=res.data[k];if(v&&v!==''&&v!==null&&v!=='null'&&String(v).toLowerCase()!=='null'){if(!extracted[k]||extracted[k]==='')extracted[k]=String(v);}}
       }
-    }
-    if (!exists) {
-      files.push(f);
-    }
+      setFd(i,'ok');
+    }catch(err){console.error(f.name,err);rawTexts.push({file:f.name,page:1,text:'ERRO: '+err.message});setFd(i,'err');}
+    showPw(true,'',Math.round((i+1)/files.length*90));
   }
-  renderFileList();
-  updateExtractBtn();
+  showPw(true,'✅ Concluído!',100);
+  setTimeout(function(){showPw(false);btn.classList.remove('loading');btn.disabled=false;renderResult(extracted);setSt('res-st','ok','Extração completa');},500);
 }
 
-// ========== FUNÇÃO MODIFICADA: REMOVE UM ARQUIVO ESPECÍFICO ==========
-function removeFile(idx) {
-  files.splice(idx, 1);
-  renderFileList();
-  updateExtractBtn();
-}
+async function callGroq(b64,mediaType,fname,pageNum){
+  var model=document.getElementById('model-sel').value;
+  var sys=`Você é um sistema especialista em extração de dados de documentos brasileiros.
+Analise a imagem e extraia TODOS os dados com precisão máxima.
+Retorne APENAS JSON válido, sem markdown, sem blocos de código, sem texto extra antes ou depois.
+Use exatamente estes campos (null se não encontrar no documento):
+{"nome":null,"data_nascimento":null,"local_nascimento":null,"estado_nascimento":null,"nacionalidade":null,"estado_civil":null,"escolaridade":null,"cpf":null,"rg_numero":null,"rg_orgao_emissor":null,"rg_data_emissao":null,"ctps_numero":null,"ctps_serie":null,"ctps_uf":null,"pis_numero":null,"titulo_eleitor":null,"titulo_zona":null,"titulo_secao":null,"reservista_numero":null,"reservista_serie":null,"reservista_categoria":null,"endereco":null,"cep":null,"bairro":null,"estado":null,"cidade":null,"telefone":null,"nome_pai":null,"nome_mae":null,"funcao":null,"banco":null,"agencia":null,"conta":null,"raw_text":null}
+REGRAS CRÍTICAS:
+- CPF: formato XXX.XXX.XXX-XX (ex: 319.786.098-50)
+- Datas: DD/MM/AAAA
+- rg_numero: apenas dígitos e possível X final, sem pontos (ex: 293973-5)
+- pis_numero: todos os dígitos com pontos (ex: 162.33568.01-4)
+- ctps_numero e ctps_serie SEPARADOS
+- raw_text: todo texto legível no documento
+- RG frente: nome, pai, mãe, data nascimento, naturalidade, orgão expedidor
+- RG verso/adicional: CPF, registro geral, data expedição, NIS/PIS, CTPS
+- Comprovante: endereco, cep, bairro, cidade, estado
+- PIS/Caixa Tem: pis_numero (campo NIS/PIS), ctps_numero, data nascimento, naturalidade, filiação
+- CTPS digital: nome, cpf, data_nascimento, nome_mae
+- Vacina: nome, data_nascimento, cpf, nome_mae, nacionalidade
+- Nunca invente dados. Se não encontrar, use null.`;
 
-// ========== FUNÇÃO MODIFICADA: MOSTRA TODOS OS ARQUIVOS ==========
-function renderFileList() {
-  var list = document.getElementById('file-list');
-  if (!files.length) { list.innerHTML = ''; return; }
-  var html = '';
-  for (var i = 0; i < files.length; i++) {
-    var f = files[i];
-    var icon = f.type.includes('pdf') ? '📕' : '🖼️';
-    var size = f.size > 1024*1024 ? (f.size/1024/1024).toFixed(1) + 'MB' : Math.round(f.size/1024) + 'KB';
-    html += '<div class="file-item">' +
-      '<span class="file-icon">' + icon + '</span>' +
-      '<div class="file-info">' +
-        '<div class="file-name">' + escapeHtml(f.name) + '</div>' +
-        '<div class="file-meta">' + size + '</div>' +
-      '</div>' +
-      '<button class="file-remove" onclick="removeFile(' + i + ')">✕</button>' +
-    '</div>';
+  var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+    body:JSON.stringify({
+      model:model,max_tokens:1800,temperature:0.1,
+      messages:[
+        {role:'system',content:sys},
+        {role:'user',content:[
+          {type:'image_url',image_url:{url:'data:'+mediaType+';base64,'+b64,detail:'high'}},
+          {type:'text',text:'Arquivo: '+fname+', página '+pageNum+'. Extraia todos os dados.'}
+        ]}
+      ]
+    })
+  });
+
+  if(!resp.ok){
+    var e=await resp.json().catch(function(){return{};});
+    throw new Error('Groq: '+(e.error&&e.error.message?e.error.message:'HTTP '+resp.status));
   }
-  list.innerHTML = html;
+
+  var data=await resp.json();
+  var text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'{}';
+  var js=text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'').trim();
+  var parsed;
+  try{parsed=JSON.parse(js);}
+  catch(ex){var m=js.match(/\{[\s\S]+\}/);if(m){try{parsed=JSON.parse(m[0]);}catch(e2){parsed={};}}else parsed={};}
+  var raw=parsed.raw_text||text;
+  delete parsed.raw_text;
+  return{data:parsed,raw:raw};
 }
 
-function updateExtractBtn() {
-  document.getElementById('extract-btn').disabled = !files.length;
-}
-
-// Carregar planilha template
-document.getElementById('sheet-input').addEventListener('change', function(e) {
-  var file = e.target.files[0];
-  if (!file) return;
-  
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var data = new Uint8Array(e.target.result);
-    templateWorkbook = XLSX.read(data, { type: 'array' });
-    templateSheetName = templateWorkbook.SheetNames[0];
-    showToast('✅ Planilha modelo carregada: ' + file.name);
-  };
-  reader.readAsArrayBuffer(file);
-});
-
-var dropZone = document.getElementById('drop-zone');
-var fileInput = document.getElementById('file-input');
-dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
-dropZone.addEventListener('drop', function(e) {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  addFiles(Array.from(e.dataTransfer.files));
-});
-fileInput.addEventListener('change', function(e) { addFiles(Array.from(e.target.files)); fileInput.value = ''; });
-
-// ========== FUNÇÃO MODIFICADA: PROCESSA TODOS OS ARQUIVOS ==========
-async function extractData() {
-  if (!files.length) return;
-  
-  var btn = document.getElementById('extract-btn');
-  var progress = document.getElementById('progress-bar');
-  var fill = document.getElementById('progress-fill');
-  var ocrDiv = document.getElementById('ocr-progress');
-  var ocrStatus = document.getElementById('ocr-status');
-
-  btn.classList.add('loading');
-  btn.disabled = true;
-  progress.classList.add('show');
-  fill.style.width = '5%';
-  ocrDiv.classList.add('show');
-  
-  var combinedText = '';
-  var totalFiles = files.length;
-  
-  for (var idx = 0; idx < totalFiles; idx++) {
-    var file = files[idx];
-    ocrStatus.innerHTML = '🔄 Processando arquivo ' + (idx + 1) + ' de ' + totalFiles + ': ' + escapeHtml(file.name);
-    fill.style.width = (idx / totalFiles) * 50 + '%';
-    
-    try {
-      var imageData = await fileToImageData(file);
-      var result = await Tesseract.recognize(imageData, 'por', {
-        logger: function(m) {
-          if (m.status === 'recognizing text') {
-            var pct = 50 + (idx / totalFiles) * 40 + (m.progress * 40 / totalFiles);
-            fill.style.width = pct + '%';
-            ocrStatus.innerHTML = '📖 OCR ' + (idx + 1) + '/' + totalFiles + ': ' + Math.round(m.progress * 100) + '%';
-          }
-        }
-      });
-      combinedText += '\n\n--- ' + file.name + ' ---\n' + result.data.text;
-    } catch(err) {
-      console.error('Erro no arquivo ' + file.name, err);
-      combinedText += '\n\n--- ' + file.name + ' (ERRO) ---\n';
-    }
-  }
-  
-  lastOcrText = combinedText;
-  fill.style.width = '95%';
-  ocrStatus.innerHTML = '✅ Combinando dados de ' + totalFiles + ' arquivos...';
-  
-  extractedData = extractWithRegex(lastOcrText);
-  fill.style.width = '100%';
-  
-  setTimeout(function() {
-    progress.classList.remove('show');
-    ocrDiv.classList.remove('show');
-    renderResult(extractedData);
-    btn.classList.remove('loading');
-    btn.disabled = false;
-  }, 300);
-}
-
-async function fileToImageData(file) {
-  return new Promise(function(resolve, reject) {
-    if (file.type === 'application/pdf') {
-      var reader = new FileReader();
-      reader.onload = async function(e) {
-        try {
-          var pdfData = new Uint8Array(e.target.result);
-          var pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-          var page = await pdf.getPage(1);
-          var viewport = page.getViewport({ scale: 2.0 });
-          var canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
-          resolve(canvas);
-        } catch(err) { reject(err); }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      var img = new Image();
-      img.onload = function() {
-        var canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        resolve(canvas);
-        URL.revokeObjectURL(img.src);
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    }
+async function fileToPages(f){if(f.type==='application/pdf')return await pdfToPages(f);return await imgToPage(f);}
+async function imgToPage(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(e){res([{b64:e.target.result.split(',')[1],type:f.type}]);};r.onerror=rej;r.readAsDataURL(f);});}
+async function pdfToPages(f){
+  if(!window.pdfjsLib){await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+  return new Promise(function(resolve,reject){
+    var r=new FileReader();
+    r.onload=async function(e){
+      try{var pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise;var pages=[];var max=Math.min(pdf.numPages,8);
+        for(var i=1;i<=max;i++){var pg=await pdf.getPage(i);var vp=pg.getViewport({scale:2.2});var cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;pages.push({b64:cv.toDataURL('image/jpeg',0.92).split(',')[1],type:'image/jpeg'});}
+        resolve(pages);
+      }catch(err){reject(err);}
+    };r.onerror=reject;r.readAsArrayBuffer(f);
   });
 }
+function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 
-function extractWithRegex(texto) {
-  var data = {};
-  if (!texto) return data;
-  
-  texto = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  texto = texto.toUpperCase();
-  
-  // NOME
-  var patterns = [
-    /NOME[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/,
-    /NOME COMPLETO[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/,
-    /([A-Z]{2,}\s+[A-Z]{2,}\s+[A-Z]{2,})/
-  ];
-  for (var i = 0; i < patterns.length; i++) {
-    var match = texto.match(patterns[i]);
-    if (match && match[1] && match[1].length > 10) {
-      data.nome = capitalizar(match[1]);
-      break;
-    }
+function renderResult(data){
+  document.getElementById('re').style.display='none';
+  var rc=document.getElementById('rc');rc.style.display='block';rc.classList.add('fadeUp');
+  var total=Object.keys(FL).length;
+  var filled=Object.keys(FL).filter(function(k){return data[k]&&data[k]!==''&&data[k]!==null&&data[k]!=='null';}).length;
+  document.getElementById('st-total').textContent=total;
+  document.getElementById('st-filled').textContent=filled;
+  document.getElementById('st-files').textContent=files.length;
+  document.getElementById('st-conf').textContent=Math.round(filled/total*100)+'%';
+  document.getElementById('sbar').style.display='grid';
+  var ac=filled>12?'ok':filled>0?'warn':'err';
+  document.getElementById('al').innerHTML='<div class="alrt '+ac+'">'+( filled>12?'✓':filled>0?'⚠️':'✗' )+' Extração concluída — '+filled+'/'+total+' campos em '+files.length+' arquivo(s).</div>';
+  var html='';
+  for(var sec in FS){
+    html+='<div class="fsh">'+sec+'</div>';
+    FS[sec].forEach(function(k){
+      var v=data[k];var isEmpty=!v||v===''||v===null||v==='null';
+      html+='<div class="fr"><div class="fk">'+(FL[k]||k)+'</div><div class="fv'+(isEmpty?' empty':'')+'" contenteditable="true" data-key="'+k+'" oninput="upd(this)">'+(isEmpty?'— não encontrado —':esc(String(v)))+'</div></div>';
+    });
   }
-  
-  // CPF
-  var cpfMatch = texto.match(/(?:CPF|CIC)[:\s]*([0-9]{3}\.?[0-9]{3}\.?[0-9]{3}-?[0-9]{2})/);
-  if (cpfMatch) data.cpf = cpfMatch[1].replace(/[.-]/g, '');
-  
-  // RG
-  var rgMatch = texto.match(/(?:RG|IDENTIDADE|REGISTRO GERAL)[:\s]*([0-9]{2,}\.?[0-9]{3,}\.?[0-9]{3,}[0-9X]?)/);
-  if (rgMatch) data.rg = rgMatch[1].replace(/[.-]/g, '');
-  
-  // DATA NASCIMENTO
-  var dataMatch = texto.match(/(?:DATA[:\s]*NASCIMENTO|NASCIMENTO|NASC)[:\s]*([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})/);
-  if (dataMatch) data.data_nascimento = dataMatch[1];
-  
-  // ÓRGÃO EMISSOR
-  var orgaoMatch = texto.match(/(?:ORGAO|ORG[AO]?)[:\s]*EMISSOR[:\s]*([A-Z]{2,6})/i);
-  if (orgaoMatch) data.orgao_emissor = orgaoMatch[1].toUpperCase();
-  
-  // DATA EMISSÃO
-  var emissaoMatch = texto.match(/(?:DATA[:\s]*EMISSAO|EXPEDICAO)[:\s]*([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})/);
-  if (emissaoMatch) data.data_emissao = emissaoMatch[1];
-  
-  // NATURALIDADE
-  var natMatch = texto.match(/(?:NATURALIDADE|LOCAL[:\s]*NASCIMENTO)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){1,3})/);
-  if (natMatch) data.naturalidade = capitalizar(natMatch[1]);
-  
-  // NACIONALIDADE
-  var nacMatch = texto.match(/(?:NACIONALIDADE)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,})*)/);
-  if (nacMatch) data.nacionalidade = capitalizar(nacMatch[1]);
-  
-  // ENDEREÇO
-  var endMatch = texto.match(/(?:ENDERE[CÇ]O|END)[:\s]*([A-Z0-9]{2,}(?:\s+[A-Z0-9]{2,}){3,})/);
-  if (endMatch) data.endereco = capitalizar(endMatch[1].substring(0, 80));
-  
-  // TELEFONE
-  var telMatch = texto.match(/(?:TELEFONE|FONE|TEL|CELULAR)[:\s]*\(?([0-9]{2})\)?[.\s-]?([0-9]{4,5}[.-]?[0-9]{4})/);
-  if (telMatch) data.telefone = '(' + telMatch[1] + ') ' + telMatch[2];
-  
-  // CTPS
-  var ctpsMatch = texto.match(/(?:CTPS|CARTEIRA[:\s]*TRABALHO)[:\s]*([0-9]{4,})/);
-  if (ctpsMatch) data.ctps_numero = ctpsMatch[1];
-  
-  // PIS
-  var pisMatch = texto.match(/(?:PIS|PIS\/PASEP|NIT)[:\s]*([0-9]{11})/);
-  if (pisMatch) data.pis = pisMatch[1];
-  
-  // PROFISSÃO
-  var profMatch = texto.match(/(?:PROFISSAO|FUNCAO|CARGO)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){1,5})/);
-  if (profMatch) data.profissao = capitalizar(profMatch[1]);
-  
-  // PAI
-  var paiMatch = texto.match(/(?:PAI|FILIACAO[:\s]*1)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/);
-  if (paiMatch) data.nome_pai = capitalizar(paiMatch[1]);
-  
-  // MÃE
-  var maeMatch = texto.match(/(?:MAE|MÃE|FILIACAO[:\s]*2)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/);
-  if (maeMatch) data.nome_mae = capitalizar(maeMatch[1]);
-  
-  return data;
+  document.getElementById('fw').innerHTML=html;
+  document.getElementById('jcon').textContent=JSON.stringify(data,null,2);
 }
 
-function capitalizar(str) {
-  if (!str) return '';
-  str = str.toLowerCase();
-  return str.replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+function upd(el){var k=el.getAttribute('data-key');var v=el.textContent.trim();if(v==='— não encontrado —')v='';extracted[k]=v;el.classList.toggle('empty',!v);document.getElementById('jcon').textContent=JSON.stringify(extracted,null,2);}
+
+function fillSheet(){
+  if(!origWb){toast('⚠️ Carregue a planilha original primeiro!');return;}
+  if(!extracted||!Object.keys(extracted).filter(function(k){return extracted[k];}).length){toast('⚠️ Extraia os dados primeiro!');return;}
+  var d=extracted;
+  var ws=origWb.Sheets[origSheetName];
+  // Clone profundo
+  var ns={};
+  for(var cell in ws){if(!ws.hasOwnProperty(cell))continue;if(cell[0]==='!')ns[cell]=ws[cell];else if(ws[cell]&&typeof ws[cell]==='object')ns[cell]=JSON.parse(JSON.stringify(ws[cell]));}
+  function set(a,v){if(!v||v===''||v===null||v==='null')return;ns[a]={t:'s',v:String(v)};}
+
+  // MAPEAMENTO EXATO DA PLANILHA FIBRA
+  if(d.nome) ns['A3']={t:'s',v:'NOME: '+d.nome};
+  if(d.endereco) set('B4',d.endereco);
+  if(d.cep) ns['A5']={t:'s',v:'CEP: '+d.cep};
+  if(d.bairro) set('C5',d.bairro);
+  if(d.estado) set('F5',d.estado);
+  if(d.telefone) set('B6',d.telefone);
+  if(d.ctps_numero) set('I6',d.ctps_numero);
+  if(d.ctps_serie) set('K6',d.ctps_serie);
+  if(d.data_nascimento) ns['A7']={t:'s',v:'DATA NASCIMENTO: '+d.data_nascimento};
+  if(d.local_nascimento) set('C7',d.local_nascimento); else if(d.cidade) set('C7',d.cidade);
+  if(d.estado_nascimento) set('F7',d.estado_nascimento);
+  if(d.ctps_uf) set('K7',d.ctps_uf);
+  if(d.rg_orgao_emissor) set('I8',d.rg_orgao_emissor);
+  if(d.rg_data_emissao) set('K8',d.rg_data_emissao);
+  if(d.estado_civil) set('B9',d.estado_civil);
+  if(d.nacionalidade) set('C9',d.nacionalidade);
+  if(d.escolaridade) set('E9',d.escolaridade);
+  if(d.rg_numero) set('I10',d.rg_numero);
+  if(d.funcao) set('B11',d.funcao);
+  if(d.ctps_numero) set('I11',d.ctps_numero);
+  if(d.nome_pai) ns['A14']={t:'s',v:'PAI: '+d.nome_pai};
+  if(d.nome_mae) ns['A15']={t:'s',v:'MÃE: '+d.nome_mae};
+  if(d.cpf) set('I15',d.cpf);
+  if(d.titulo_eleitor) set('I19',d.titulo_eleitor);
+  if(d.titulo_zona) set('I21',d.titulo_zona);
+  if(d.titulo_secao) set('K21',d.titulo_secao);
+  if(d.reservista_numero) set('I24',d.reservista_numero);
+  if(d.reservista_serie) set('I26',d.reservista_serie);
+  if(d.reservista_categoria) set('K26',d.reservista_categoria);
+  if(d.pis_numero) set('I29',d.pis_numero);
+  if(d.banco) set('B32',d.banco);
+  if(d.agencia) set('E32',d.agencia);
+  if(d.conta) set('B33',d.conta);
+
+  var owb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(owb,ns,origSheetName);
+  origWb.SheetNames.forEach(function(sn){if(sn!==origSheetName)XLSX.utils.book_append_sheet(owb,origWb.Sheets[sn],sn);});
+  var ts=new Date().toISOString().slice(0,19).replace(/:/g,'-').replace('T','_');
+  var nome=(d.nome||'candidato').split(' ').slice(0,2).join('_');
+  XLSX.writeFile(owb,'Fibra_'+nome+'_'+ts+'.xlsx');
+  toast('✅ Planilha preenchida e baixada!');
+  document.getElementById('al').innerHTML='<div class="alrt ok">✅ Planilha gerada! Estrutura original 100% preservada.</div>';
 }
 
-function renderResult(data) {
-  document.getElementById('result-empty').style.display = 'none';
-  document.getElementById('result-content').style.display = 'block';
-  
-  var count = Object.keys(data).filter(function(k) { return data[k] && data[k] !== ''; }).length;
-  document.getElementById('alert-box').innerHTML = '<div class="alert success">✓ Extração concluída de ' + files.length + ' arquivo(s)! ' + count + ' campos encontrados.</div>';
-  
-  var grid = document.getElementById('field-grid');
-  var rows = '';
-  for (var key in data) {
-    if (data[key]) {
-      rows += '<div class="field-row"><div class="field-key">' + key.replace(/_/g, ' ').toUpperCase() + '</div><div class="field-val">' + escapeHtml(data[key]) + '</div></div>';
-    }
-  }
-  grid.innerHTML = rows || '<div style="padding:20px;text-align:center;color:var(--text3);">Nenhum dado encontrado</div>';
-  document.getElementById('debug-content').textContent = lastOcrText || 'Nenhum texto OCR disponível';
-}
-
-function fillSheet() {
-  if (!extractedData || Object.keys(extractedData).length === 0) {
-    showToast('❌ Extraia os dados primeiro!');
-    return;
-  }
-  
-  if (!templateWorkbook) {
-    showToast('❌ Carregue a planilha modelo da Fibra primeiro!');
-    return;
-  }
-  
-  var originalSheet = templateWorkbook.Sheets[templateSheetName];
-  var newSheet = {};
-  
-  for (var cell in originalSheet) {
-    if (cell[0] !== '!') {
-      newSheet[cell] = JSON.parse(JSON.stringify(originalSheet[cell]));
-    }
-  }
-  
-  if (originalSheet['!ref']) newSheet['!ref'] = originalSheet['!ref'];
-  if (originalSheet['!cols']) newSheet['!cols'] = originalSheet['!cols'];
-  if (originalSheet['!rows']) newSheet['!rows'] = originalSheet['!rows'];
-  if (originalSheet['!merges']) newSheet['!merges'] = originalSheet['!merges'];
-  
-  // Preenche os campos
-  var cellMapping = {
-    'NOME': 'C3', 'ENDEREÇO': 'C4', 'CEP': 'C5', 'BAIRRO': 'E5',
-    'ESTADO': 'G5', 'TELEFONES': 'C6', 'CPF': 'I15', 'RG': 'I10',
-    'DATA NASCIMENTO': 'C7', 'LOCAL DE NASCIMENTO': 'F7', 'NACIONALIDADE': 'E9',
-    'ESTADO CIVIL': 'C9', 'FUNÇÃO': 'C11', 'PAI': 'C14', 'MÃE': 'C15',
-    'CTPS NÚMERO': 'I5', 'PIS': 'I28'
-  };
-  
-  for (var campo in cellMapping) {
-    var valor = '';
-    if (campo === 'NOME') valor = extractedData.nome;
-    else if (campo === 'ENDEREÇO') valor = extractedData.endereco;
-    else if (campo === 'CEP') valor = extractedData.cep;
-    else if (campo === 'BAIRRO') valor = extractedData.bairro;
-    else if (campo === 'ESTADO') valor = extractedData.estado;
-    else if (campo === 'TELEFONES') valor = extractedData.telefone;
-    else if (campo === 'CPF') valor = extractedData.cpf;
-    else if (campo === 'RG') valor = extractedData.rg;
-    else if (campo === 'DATA NASCIMENTO') valor = extractedData.data_nascimento;
-    else if (campo === 'LOCAL DE NASCIMENTO') valor = extractedData.naturalidade;
-    else if (campo === 'NACIONALIDADE') valor = extractedData.nacionalidade;
-    else if (campo === 'ESTADO CIVIL') valor = extractedData.estado_civil;
-    else if (campo === 'FUNÇÃO') valor = extractedData.profissao;
-    else if (campo === 'PAI') valor = extractedData.nome_pai;
-    else if (campo === 'MÃE') valor = extractedData.nome_mae;
-    else if (campo === 'CTPS NÚMERO') valor = extractedData.ctps_numero;
-    else if (campo === 'PIS') valor = extractedData.pis;
-    
-    if (valor && newSheet[cellMapping[campo]]) {
-      newSheet[cellMapping[campo]].v = valor;
-    } else if (valor) {
-      newSheet[cellMapping[campo]] = { t: 's', v: valor };
-    }
-  }
-  
-  var outputWorkbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(outputWorkbook, newSheet, templateSheetName);
-  
-  var timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
-  XLSX.writeFile(outputWorkbook, 'solicitacao_preenchida_' + timestamp + '.xlsx');
-  showToast('✅ Planilha preenchida e baixada!');
-}
-
-function copyJSON() {
-  if (!extractedData) return;
-  navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2))
-    .then(function() { showToast('JSON copiado!'); })
-    .catch(function() { showToast('Erro ao copiar'); });
-}
-
-function toggleDebug() {
-  var box = document.getElementById('debug-text');
-  box.classList.toggle('show');
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function showToast(msg) {
-  var t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent-bg);color:var(--accent-text);padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;z-index:999;';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(function() { t.remove(); }, 2000);
-}
+function showPw(show,lbl,pct){var pw=document.getElementById('pw');if(!show){pw.classList.remove('show');return;}pw.classList.add('show');if(lbl)document.getElementById('ptxt').textContent=lbl;if(pct!==undefined){document.getElementById('pfill').style.width=pct+'%';document.getElementById('ppct').textContent=pct+'%';}}
+function setPlog(msg){document.getElementById('plog').textContent=msg;}
+function setFd(i,s){var el=document.getElementById('fd'+i);if(el)el.className='fdot '+s;}
+function setSt(id,t,txt){var el=document.getElementById(id);if(!el)return;el.className='cst '+t;el.textContent=txt;}
+function toggleJSON(){document.getElementById('rbox').classList.remove('open');document.getElementById('jbox').classList.toggle('show');}
+function toggleRaw(){document.getElementById('jbox').classList.remove('show');var rb=document.getElementById('rbox');if(rb.classList.contains('open')){rb.classList.remove('open');}else{rb.classList.add('open');document.getElementById('rcon').textContent=rawTexts.map(function(r){return'=== '+r.file+(r.page>1?' p.'+r.page:'')+' ===\n'+r.text;}).join('\n\n');}}
+function copyJSON(){navigator.clipboard.writeText(JSON.stringify(extracted,null,2)).then(function(){toast('✅ JSON copiado!');}).catch(function(){toast('Erro ao copiar');});}
+var _tt=null;
+function toast(msg){if(_tt)clearTimeout(_tt);var ex=document.querySelector('.toast');if(ex)ex.remove();var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);_tt=setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){t.remove();},300);},3000);}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
 </body>
 </html>
