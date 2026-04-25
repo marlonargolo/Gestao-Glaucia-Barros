@@ -2,451 +2,753 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DocExtract PRO — Fibra</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>DocMapper · Extração + Planilha Interativa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <style>
-:root{--ink:#0D0D0D;--ink2:#3A3A3A;--ink3:#7A7A7A;--paper:#F8F6F1;--paper2:#EDEAE3;--line:#D4D0C8;--gold:#C9A84C;--gold2:#F0D080;--green:#2A6644;--green-bg:#E8F5EE;--red:#8B1A2A;--red-bg:#FDE8EA;--blue:#1A3A6B;--blue-bg:#E8EEF8;--r:6px;--rlg:12px;--sh:0 2px 12px rgba(0,0,0,.08);--shlg:0 8px 40px rgba(0,0,0,.12)}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
-header{background:var(--ink);color:var(--paper);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--gold)}
-.lm{display:flex;align-items:center;gap:12px}
-.lmark{width:34px;height:34px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:17px;color:var(--ink);font-weight:700}
-.ltx{font-family:'DM Serif Display',serif;font-size:19px}
-.lsub{font-size:10px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-top:1px}
-.hbg{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:3px;background:rgba(201,168,76,.15);color:var(--gold2);border:1px solid rgba(201,168,76,.3)}
-.main{max-width:1320px;margin:0 auto;padding:40px 24px 90px;position:relative;z-index:1}
-.ph{margin-bottom:36px;padding-bottom:26px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px}
-.pt{font-family:'DM Serif Display',serif;font-size:36px;line-height:1.1;letter-spacing:-1px}
-.pt em{font-style:italic;color:var(--gold)}
-.pd{font-size:13px;color:var(--ink3);margin-top:6px;max-width:450px;line-height:1.7}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
-@media(max-width:960px){.grid{grid-template-columns:1fr}}
-.card{background:#fff;border:1px solid var(--line);border-radius:var(--rlg);overflow:hidden;box-shadow:var(--sh);transition:box-shadow .2s}
-.card:hover{box-shadow:var(--shlg)}
-.ch{padding:16px 20px 13px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--paper)}
-.chl{display:flex;align-items:center;gap:9px}
-.csnum{width:23px;height:23px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.ctit{font-family:'DM Serif Display',serif;font-size:15px}
-.cst{font-size:11px;font-weight:600;letter-spacing:.5px;padding:3px 9px;border-radius:20px}
-.cst.w{background:var(--paper2);color:var(--ink3)}.cst.ok{background:var(--green-bg);color:var(--green)}.cst.err{background:var(--red-bg);color:var(--red)}.cst.proc{background:var(--blue-bg);color:var(--blue)}
-.cb{padding:20px}
-/* API KEY */
-.akey{background:#FFFDF5;border:1px solid rgba(201,168,76,.4);border-radius:var(--r);padding:13px;margin-bottom:16px}
-.akey-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);margin-bottom:7px}
-.akey-row{display:flex;gap:7px}
-.akey-inp{flex:1;padding:8px 11px;border:1px solid var(--line);border-radius:var(--r);font-family:'DM Mono',monospace;font-size:13px;background:#fff;color:var(--ink);outline:none;transition:border-color .2s}
-.akey-inp:focus{border-color:var(--gold)}
-.akey-btn{padding:8px 13px;background:var(--ink);color:var(--paper);border:none;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-.akey-btn:hover{background:#222}
-.akey-info{font-size:11px;color:var(--ink3);margin-top:6px;line-height:1.6}
-.akey-info a{color:var(--gold)}
-.msel{margin-top:9px}
-.msel label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--ink2);display:block;margin-bottom:4px}
-.msel select{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:var(--r);font-size:12px;font-family:'DM Mono',monospace;background:#fff;color:var(--ink);outline:none;cursor:pointer}
-.msel select:focus{border-color:var(--gold)}
-/* DROP */
-.dz{position:relative;border:2px dashed var(--line);border-radius:10px;padding:30px 18px;text-align:center;cursor:pointer;background:var(--paper);transition:all .2s}
-.dz:hover,.dz.over{border-color:var(--gold);background:#FFFDF5}
-.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.dz-icon{font-size:32px;margin-bottom:9px;display:block;line-height:1}
-.dz-main{font-weight:600;font-size:14px;margin-bottom:3px}
-.dz-hint{font-size:11px;color:var(--ink3);line-height:1.7}
-.flist{margin-top:12px;display:flex;flex-direction:column;gap:5px;max-height:230px;overflow-y:auto}
-.fi{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r)}
-.ftb{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 5px;border-radius:3px;text-transform:uppercase;flex-shrink:0}
-.pdf{background:#FFE0E0;color:#8B1A2A}.img{background:#E0EAF8;color:#1A3A6B}
-.fn{flex:1;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fsz{font-size:11px;color:var(--ink3);font-family:'DM Mono',monospace;flex-shrink:0}
-.fdot{width:8px;height:8px;border-radius:50%;background:var(--line);flex-shrink:0}
-.fdot.ok{background:var(--green)}.fdot.proc{background:var(--gold);animation:pulse 1s infinite}.fdot.err{background:var(--red)}
-.frm{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;padding:2px 5px;border-radius:3px;flex-shrink:0;line-height:1}
-.frm:hover{background:var(--red-bg);color:var(--red)}
-.sub{margin-top:16px;padding:13px;background:linear-gradient(135deg,#FFFDF5,#FFF9E6);border:1px solid rgba(201,168,76,.3);border-radius:var(--r)}
-.sub-lbl{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px}
-.sub-msg{font-size:11px;color:var(--ink3);margin-top:5px;font-style:italic}
-.sub-msg.ok{color:var(--green);font-style:normal;font-weight:500}
-.pw{margin-top:13px;display:none}
-.pw.show{display:block}
-.plbl{font-size:12px;color:var(--ink2);margin-bottom:4px;display:flex;justify-content:space-between}
-.ptrack{height:4px;background:var(--paper2);border-radius:2px;overflow:hidden}
-.pfill{height:100%;background:linear-gradient(90deg,var(--gold),#E8C060);border-radius:2px;width:0%;transition:width .4s ease}
-.plog{margin-top:5px;font-size:11px;color:var(--ink3);font-family:'DM Mono',monospace;min-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.xbtn{width:100%;margin-top:16px;padding:14px;background:var(--ink);color:var(--paper);border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;letter-spacing:.3px;position:relative;overflow:hidden}
-.xbtn:hover{background:#1A1A1A;box-shadow:0 4px 20px rgba(0,0,0,.2)}
-.xbtn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
-.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;display:none}
-.xbtn.loading .spin{display:block}
-.xbtn.loading .btxt{display:none}
-.re{text-align:center;padding:48px 18px;color:var(--ink3)}
-.re-icon{font-size:42px;display:block;margin-bottom:13px;opacity:.4}
-.re-txt{font-size:14px;line-height:1.7}
-.sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
-.stat{background:var(--paper2);border:1px solid var(--line);border-radius:var(--r);padding:9px;text-align:center}
-.sv{font-family:'DM Serif Display',serif;font-size:21px;color:var(--ink);line-height:1;margin-bottom:2px}
-.sl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);font-weight:600}
-.fw{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:13px;max-height:420px;overflow-y:auto}
-.fsh{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px 11px;background:var(--ink);color:var(--paper)}
-.fr{display:grid;grid-template-columns:135px 1fr;border-bottom:1px solid var(--line)}
-.fr:last-child{border-bottom:none}
-.fr:hover{background:var(--paper)}
-.fk{padding:7px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);background:var(--paper2);border-right:1px solid var(--line);display:flex;align-items:center}
-.fv{padding:7px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--ink);word-break:break-all;outline:none;cursor:text}
-.fv.empty{color:var(--ink3);font-style:italic;font-family:'DM Sans',sans-serif;font-size:12px}
-.fv:focus{background:#FFFDF5;border-left:3px solid var(--gold)}
-.eh{font-size:10px;color:var(--ink3);margin-bottom:6px;text-align:right;font-style:italic}
-.ract{display:flex;gap:7px;flex-wrap:wrap}
-.abtn{flex:1;min-width:100px;padding:9px 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s}
-.abtn:hover{background:var(--paper2);border-color:var(--ink3)}
-.abtn.prim{background:var(--green);color:#fff;border-color:var(--green)}
-.abtn.prim:hover{background:#1E5036}
-.alrt{padding:10px 13px;border-radius:var(--r);font-size:13px;font-weight:500;margin-bottom:13px;line-height:1.5}
-.alrt.ok{background:var(--green-bg);color:var(--green)}.alrt.err{background:var(--red-bg);color:var(--red)}.alrt.warn{background:#FFF8E6;color:#92600A}
-.jtgl{background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);padding:3px 0;font-family:'DM Mono',monospace;text-decoration:underline;margin-top:6px;display:block}
-.jbox{display:none;margin-top:9px;background:#0D0D0D;border-radius:var(--r);padding:13px;max-height:180px;overflow-y:auto}
-.jbox.show,.jbox.open{display:block}
-.jbox pre{font-family:'DM Mono',monospace;font-size:11px;color:#8BE0A4;line-height:1.6;white-space:pre-wrap}
-.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 20px;border-radius:40px;font-size:13px;font-weight:600;z-index:999;border:1px solid var(--gold);box-shadow:var(--shlg);animation:tIn .3s ease;max-width:80vw;text-align:center}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.fadeUp{animation:fadeUp .4s ease forwards}
-::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: #F2F0ED;
+    font-family: 'Inter', sans-serif;
+    color: #1E1B18;
+    padding: 32px 24px 64px;
+  }
+
+  .container {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* header */
+  .header {
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    border-bottom: 2px solid #E0DBD4;
+    padding-bottom: 20px;
+  }
+  .title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, #1E3A2F, #1E1B18);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .title p {
+    font-size: 14px;
+    color: #6B6258;
+    margin-top: 6px;
+  }
+  .badge {
+    background: #E9E4DD;
+    padding: 6px 14px;
+    border-radius: 60px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #2C5A44;
+  }
+
+  /* two column layout */
+  .dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  @media (max-width: 1000px) {
+    .dashboard { grid-template-columns: 1fr; }
+    body { padding: 20px; }
+  }
+
+  /* cards */
+  .card {
+    background: #FFFFFF;
+    border-radius: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid #EAE5DE;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.08); }
+  .card-header {
+    padding: 18px 24px;
+    background: #FEFCF9;
+    border-bottom: 1px solid #EFEAE3;
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-header span:first-child {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .step {
+    background: #1E3A2F;
+    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .card-body { padding: 24px; }
+
+  /* upload zone */
+  .upload-area {
+    border: 2px dashed #CDC6BC;
+    border-radius: 20px;
+    background: #FEFAF7;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-bottom: 20px;
+  }
+  .upload-area.drag-over { border-color: #2C5A44; background: #F2F9F4; }
+  .upload-icon { font-size: 36px; margin-bottom: 8px; display: block; }
+  .upload-text { font-weight: 600; margin-bottom: 4px; font-size: 15px; }
+  .upload-hint { font-size: 12px; color: #8C8379; }
+
+  /* file list */
+  .file-list {
+    max-height: 260px;
+    overflow-y: auto;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .file-row {
+    background: #F8F6F2;
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #EBE5DD;
+  }
+  .file-name { flex:1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-size { font-size: 11px; font-family: monospace; color: #8C8379; }
+  .remove-file { background: none; border: none; cursor: pointer; font-size: 18px; color: #A19588; padding: 0 6px; }
+  .remove-file:hover { color: #B13E3E; }
+
+  button.primary-btn {
+    background: #1E3A2F;
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 14px;
+    font-weight: 600;
+    border-radius: 40px;
+    font-size: 15px;
+    margin-top: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: 0.2s;
+  }
+  button.primary-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #AFA69C; }
+  button.primary-btn:not(:disabled):hover { background: #102A21; transform: scale(0.99); }
+
+  /* progress */
+  .progress-section {
+    margin-top: 16px;
+    display: none;
+  }
+  .progress-bar-bg {
+    background: #E9E4DD;
+    border-radius: 30px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    width: 0%;
+    height: 100%;
+    background: #2C5A44;
+    transition: width 0.2s;
+  }
+  .ocr-status {
+    font-size: 12px;
+    margin-top: 8px;
+    color: #5A4F44;
+    font-family: monospace;
+  }
+
+  /* extracted text panel (OCR raw) */
+  .raw-text-panel {
+    background: #F6F3EF;
+    border-radius: 18px;
+    padding: 16px;
+    margin-top: 20px;
+    border: 1px solid #E0D9D0;
+  }
+  .raw-label {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .raw-content {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: #1E1B18;
+    color: #CEE5D2;
+    padding: 14px;
+    border-radius: 14px;
+    max-height: 260px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* spreadsheet preview area */
+  .sheet-preview {
+    background: #FEFCF9;
+    border-radius: 20px;
+    border: 1px solid #E2DCD3;
+    overflow-x: auto;
+    margin-top: 18px;
+  }
+  .sheet-preview table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  .sheet-preview td, .sheet-preview th {
+    border: 1px solid #DDD6CC;
+    padding: 8px 6px;
+    vertical-align: top;
+    background: white;
+  }
+  .sheet-preview th {
+    background: #F0EBE4;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+  .draggable-cell {
+    cursor: grab;
+    transition: 0.05s linear;
+    background: #FEF9EF;
+  }
+  .draggable-cell:active { cursor: grabbing; }
+  .cell-highlight {
+    outline: 2px solid #2C5A44;
+    background-color: #E9F5EB;
+  }
+  .mapping-badge {
+    background: #E5DFD7;
+    border-radius: 14px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  /* mapping area (extracted fields) */
+  .extracted-fields {
+    background: #F9F7F4;
+    border-radius: 18px;
+    border: 1px solid #E9E3DB;
+    padding: 8px 0;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+  .field-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #E8E1D9;
+    cursor: grab;
+    transition: 0.1s;
+    background: white;
+    margin: 4px 8px;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .field-card:active { cursor: grabbing; }
+  .field-key {
+    font-weight: 600;
+    font-size: 12px;
+    color: #2C3E33;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+  }
+  .field-value {
+    font-size: 13px;
+    font-family: monospace;
+    background: #F2EFEA;
+    padding: 2px 8px;
+    border-radius: 30px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .empty-value { color: #B2A99F; font-style: italic; }
+
+  .info-note {
+    font-size: 12px;
+    background: #F0F0EB;
+    padding: 12px;
+    border-radius: 16px;
+    margin-top: 12px;
+    color: #4E5A51;
+  }
+
+  .toast-msg {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1E1B18;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 60px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 1000;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  }
+  button.small-outline {
+    background: none;
+    border: 1px solid #CBC2B8;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
-<header>
-  <div class="lm">
-    <div class="lmark">F</div>
-    <div><div class="ltx">DocExtract PRO</div><div class="lsub">Fibra — Solicitação de Emprego</div></div>
-  </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span class="hbg">✦ Groq Vision AI</span>
-    <span class="hbg">100% Gratuito</span>
-  </div>
-</header>
-
-<div class="main">
-  <div class="ph">
-    <div>
-      <h1 class="pt">Extração <em>Inteligente</em><br>de Documentos</h1>
-      <p class="pd">Groq + LLaMA 4 Vision (API gratuita) extrai dados com precisão máxima de RGs, CPFs, CTPS e qualquer documento. Planilha Fibra preservada 100%.</p>
+<div class="container">
+  <div class="header">
+    <div class="title">
+      <h1>📄 Extrator + Mapeador visual</h1>
+      <p>Envie múltiplos arquivos (imagens/PDF) → OCR completo → arraste os campos para a planilha modelo</p>
     </div>
+    <div class="badge">✦ arraste e associe campos manualmente</div>
   </div>
 
-  <div class="grid">
-    <!-- COLUNA ESQUERDA -->
-    <div>
-      <div class="akey">
-        <div class="akey-lbl">🔑 Chave API Groq (gratuita)</div>
-        <div class="akey-row">
-          <input type="password" class="akey-inp" id="api-key" placeholder="gsk_..." />
-          <button class="akey-btn" onclick="saveKey()">Salvar</button>
-        </div>
-        <div class="msel">
-          <label>Modelo de visão</label>
-          <select id="model-sel">
-            <option value="meta-llama/llama-4-scout-17b-16e-instruct">LLaMA 4 Scout 17B — Recomendado ✦</option>
-            <option value="meta-llama/llama-4-maverick-17b-128e-instruct">LLaMA 4 Maverick 17B — Mais potente</option>
-            <option value="llama-3.2-90b-vision-preview">LLaMA 3.2 90B Vision</option>
-            <option value="llama-3.2-11b-vision-preview">LLaMA 3.2 11B Vision — Mais rápido</option>
-          </select>
-        </div>
-        <div class="akey-info">
-          Chave gratuita: <a href="https://console.groq.com" target="_blank">console.groq.com</a>
-          · Armazenada só nesta sessão · Nunca enviada a terceiros
-        </div>
+  <div class="dashboard">
+    <!-- COLUNA ESQUERDA: upload e extração -->
+    <div class="card">
+      <div class="card-header">
+        <span><span class="step">1</span> Documentos & OCR</span>
+        <span class="mapping-badge">extração completa</span>
       </div>
-
-      <div class="card">
-        <div class="ch">
-          <div class="chl"><div class="csnum">1</div><span class="ctit">Documentos do Candidato</span></div>
-          <span class="cst w" id="doc-st">Aguardando</span>
+      <div class="card-body">
+        <div class="upload-area" id="dropZone">
+          <input type="file" id="fileInput" multiple accept="image/*,.pdf" style="display:none">
+          <span class="upload-icon">📎📑</span>
+          <div class="upload-text">Clique ou arraste arquivos</div>
+          <div class="upload-hint">RG, CPF, Carteira Trabalho, Comprovantes (PNG, JPG, PDF)</div>
         </div>
-        <div class="cb">
-          <div class="dz" id="dz">
-            <input type="file" id="fi" accept="image/*,.pdf" multiple />
-            <span class="dz-icon">📂</span>
-            <div class="dz-main">Arraste os documentos aqui</div>
-            <div class="dz-hint">
-              RG frente+verso · CPF · CTPS digital · PIS/Caixa Tem<br>
-              Título Eleitor · Reservista · Comprovante de Endereço<br>
-              JPG · PNG · PDF — múltiplos arquivos simultâneos
-            </div>
+        <div class="file-list" id="fileListContainer"></div>
+
+        <div class="progress-section" id="progressArea">
+          <div class="progress-bar-bg"><div class="progress-fill" id="ocrFill"></div></div>
+          <div class="ocr-status" id="ocrStatusMsg">Aguardando envio...</div>
+        </div>
+
+        <button class="primary-btn" id="extractBtn" disabled>✨ Extrair textos de todos os arquivos</button>
+
+        <!-- Painel de texto OCR extraído (completo) -->
+        <div class="raw-text-panel">
+          <div class="raw-label">
+            <span>📜 TEXTO EXTRAÍDO (OCR + PDF)</span>
+            <button class="small-outline" id="copyRawBtn" style="font-size:10px">Copiar tudo</button>
           </div>
-          <div class="flist" id="flist"></div>
-          <div class="sub">
-            <div class="sub-lbl">📊 Planilha Fibra Original (.xlsx)</div>
-            <input type="file" id="sheet-in" accept=".xlsx,.xls" style="width:100%;font-size:13px;cursor:pointer" />
-            <div class="sub-msg" id="sheet-msg">Carregue "SOLICITAÇÃO DE EMPREGO Fibra.xlsx"</div>
+          <div class="raw-content" id="rawOcrDisplay">
+            Nenhum documento processado ainda. Clique em extrair.
           </div>
-          <div class="pw" id="pw">
-            <div class="plbl"><span id="ptxt">Processando...</span><span id="ppct" style="font-family:'DM Mono',monospace;font-size:11px">0%</span></div>
-            <div class="ptrack"><div class="pfill" id="pfill"></div></div>
-            <div class="plog" id="plog"></div>
-          </div>
-          <button class="xbtn" id="xbtn" onclick="runExtraction()" disabled>
-            <div class="spin"></div>
-            <span class="btxt">✦ Extrair Dados com IA</span>
-          </button>
+        </div>
+
+        <div class="info-note">
+          💡 Dica: o sistema combina todos os documentos. Campos não mapeados automaticamente podem ser <strong>arrastados</strong> para a planilha.
         </div>
       </div>
     </div>
 
-    <!-- COLUNA DIREITA -->
-    <div>
-      <div class="card">
-        <div class="ch">
-          <div class="chl"><div class="csnum">2</div><span class="ctit">Dados Extraídos</span></div>
-          <span class="cst w" id="res-st">Aguardando extração</span>
+    <!-- COLUNA DIREITA: planilha modelo (original) e mapeamento -->
+    <div class="card">
+      <div class="card-header">
+        <span><span class="step">2</span> Planilha Fibra + mapeamento inteligente</span>
+        <span class="mapping-badge">arrastar dados</span>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom: 16px;">
+          <label style="font-weight: 600; font-size: 13px;">📂 Carregar planilha modelo (SOLICITAÇÃO DE EMPREGO.xlsx)</label>
+          <input type="file" id="sheetUpload" accept=".xlsx,.xls" style="margin-top: 8px; width:100%;">
+          <div id="sheetLoadMsg" style="font-size:12px; margin-top: 6px; color:#6B6258;"></div>
         </div>
-        <div class="cb">
-          <div class="re" id="re">
-            <span class="re-icon">🔍</span>
-            <span class="re-txt">Os dados aparecerão aqui organizados.<br><strong>Clique em qualquer campo</strong> para editar antes de gerar.</span>
-          </div>
-          <div id="rc" style="display:none">
-            <div id="al"></div>
-            <div class="sbar" id="sbar" style="display:none">
-              <div class="stat"><div class="sv" id="st-total">0</div><div class="sl">Campos</div></div>
-              <div class="stat"><div class="sv" id="st-filled">0</div><div class="sl">Preenchidos</div></div>
-              <div class="stat"><div class="sv" id="st-files">0</div><div class="sl">Arquivos</div></div>
-              <div class="stat"><div class="sv" id="st-conf">—</div><div class="sl">Confiança</div></div>
-            </div>
-            <div class="eh">💡 Clique em qualquer valor para editar</div>
-            <div class="fw" id="fw"></div>
-            <div class="ract">
-              <button class="abtn" onclick="copyJSON()">📋 JSON</button>
-              <button class="abtn" onclick="toggleRaw()">📄 OCR</button>
-              <button class="abtn prim" onclick="fillSheet()">📊 Preencher Planilha</button>
-            </div>
-            <button class="jtgl" onclick="toggleJSON()">[ ver JSON bruto ]</button>
-            <div class="jbox" id="jbox"><pre id="jcon"></pre></div>
-            <div class="jbox" id="rbox"><pre id="rcon" style="color:#7FC8F8"></pre></div>
-          </div>
+
+        <!-- Preview da planilha (tabela interativa com células destacáveis) -->
+        <div style="font-weight: 600; font-size:13px; margin: 12px 0 8px;">📌 Planilha interativa → arraste campos da lista abaixo</div>
+        <div class="sheet-preview" id="sheetPreviewDiv">
+          <div style="padding: 24px; text-align: center; color:#A89F94;">Carregue a planilha para visualizar</div>
         </div>
+
+        <!-- Campos extraídos (arrastáveis) -->
+        <div style="display: flex; justify-content: space-between; margin: 18px 0 10px;">
+          <span style="font-weight: 600;">🏷️ Campos extraídos (arraste p/ célula)</span>
+          <button class="small-outline" id="autoMapBtn">🤖 Mapeamento automático</button>
+        </div>
+        <div id="extractedFieldsList" class="extracted-fields">
+          <div style="padding: 32px; text-align: center; color:#B7ADA2;">Extraia dados primeiro</div>
+        </div>
+        <button class="primary-btn" id="downloadMappedBtn" style="margin-top: 20px; background:#284F3E;">⬇️ Baixar planilha preenchida (mapeada)</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-var files=[], origWb=null, origSheetName='', extracted={}, rawTexts=[], apiKey='';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  
+  // estado global
+  let uploadedFiles = [];
+  let fullOcrText = "";           // texto bruto de todos os documentos
+  let extractedKeyValues = {};     // dicionário { "nome": "João Silva", "cpf": "123..." }
+  let workbookData = null;         // workbook original (planilha)
+  let currentSheetName = "";
+  let sheetHtmlMatrix = [];         // dados para exibir células { row, col, value, address }
+  let mappingOverrides = {};        // mapeamento definido pelo usuário: enderecoCelula -> valor
 
-var FL={nome:'Nome Completo',cpf:'CPF',data_nascimento:'Data Nascimento',local_nascimento:'Local Nascimento',estado_nascimento:'Estado Nasc.',nacionalidade:'Nacionalidade',estado_civil:'Estado Civil',escolaridade:'Escolaridade',rg_numero:'RG — Número',rg_orgao_emissor:'RG — Órgão Emissor',rg_data_emissao:'RG — Data Emissão',ctps_numero:'CTPS — Número',ctps_serie:'CTPS — Série',ctps_uf:'CTPS — UF',pis_numero:'PIS/NIS',titulo_eleitor:'Título Eleitor',titulo_zona:'Título — Zona',titulo_secao:'Título — Seção',reservista_numero:'Reservista — Nº',reservista_serie:'Reservista — Série',reservista_categoria:'Reservista — Cat.',endereco:'Endereço',cep:'CEP',bairro:'Bairro',cidade:'Cidade',estado:'Estado (UF)',telefone:'Telefone',nome_pai:'Nome do Pai',nome_mae:'Nome da Mãe',funcao:'Função',banco:'Banco',agencia:'Agência',conta:'Conta Corrente'};
-var FS={'IDENTIFICAÇÃO':['nome','cpf','data_nascimento','local_nascimento','estado_nascimento','nacionalidade','estado_civil','escolaridade'],'DOCUMENTOS':['rg_numero','rg_orgao_emissor','rg_data_emissao','ctps_numero','ctps_serie','ctps_uf','pis_numero','titulo_eleitor','titulo_zona','titulo_secao','reservista_numero','reservista_serie','reservista_categoria'],'CONTATO & ENDEREÇO':['endereco','cep','bairro','cidade','estado','telefone'],'FILIAÇÃO':['nome_pai','nome_mae'],'TRABALHO & BANCO':['funcao','banco','agencia','conta']};
-
-window.onload=function(){var k=sessionStorage.getItem('groq_key');if(k){document.getElementById('api-key').value=k;apiKey=k;}};
-function saveKey(){apiKey=document.getElementById('api-key').value.trim();if(apiKey){sessionStorage.setItem('groq_key',apiKey);toast('✅ Chave Groq salva');}else toast('⚠️ Insira uma chave válida');}
-
-var dz=document.getElementById('dz');
-dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});
-dz.addEventListener('dragleave',function(){dz.classList.remove('over')});
-dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');addFiles(Array.from(e.dataTransfer.files))});
-document.getElementById('fi').addEventListener('change',function(e){addFiles(Array.from(e.target.files));e.target.value=''});
-document.getElementById('sheet-in').addEventListener('change',function(e){
-  var f=e.target.files[0];if(!f)return;
-  var r=new FileReader();
-  r.onload=function(ev){origWb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});origSheetName=origWb.SheetNames[0];var m=document.getElementById('sheet-msg');m.textContent='✅ '+f.name;m.className='sub-msg ok';};
-  r.readAsArrayBuffer(f);
-});
-
-function addFiles(nf){nf.forEach(function(f){if(!files.some(function(x){return x.name===f.name&&x.size===f.size}))files.push(f);});renderFiles();updateBtn();if(files.length)setSt('doc-st','ok',files.length+' arquivo(s)');}
-function removeFile(i){files.splice(i,1);renderFiles();updateBtn();if(!files.length)setSt('doc-st','w','Aguardando');}
-function renderFiles(){var el=document.getElementById('flist');if(!files.length){el.innerHTML='';return;}el.innerHTML=files.map(function(f,i){var isPdf=f.type==='application/pdf';var sz=f.size>1048576?(f.size/1048576).toFixed(1)+'MB':Math.round(f.size/1024)+'KB';return'<div class="fi"><span class="ftb '+(isPdf?'pdf':'img')+'">'+(isPdf?'PDF':'IMG')+'</span><span class="fn" title="'+esc(f.name)+'">'+esc(f.name)+'</span><span class="fsz">'+sz+'</span><div class="fdot" id="fd'+i+'"></div><button class="frm" onclick="removeFile('+i+')">✕</button></div>';}).join('');}
-function updateBtn(){document.getElementById('xbtn').disabled=!files.length;}
-
-async function runExtraction(){
-  apiKey=document.getElementById('api-key').value.trim();
-  if(!apiKey){toast('⚠️ Insira a chave API Groq primeiro');return;}
-  if(!files.length){toast('⚠️ Adicione documentos');return;}
-  var btn=document.getElementById('xbtn');
-  btn.classList.add('loading');btn.disabled=true;
-  showPw(true,'Iniciando...',0);setSt('res-st','proc','Processando...');
-  rawTexts=[];extracted={};
-  for(var i=0;i<files.length;i++){
-    var f=files[i];setFd(i,'proc');
-    showPw(true,'Convertendo: '+f.name,Math.round(i/files.length*20));
-    try{
-      var pages=await fileToPages(f);
-      for(var p=0;p<pages.length;p++){
-        setPlog('🤖 '+f.name+(pages.length>1?' p.'+(p+1):'')+' → Groq Vision...');
-        showPw(true,'Analisando: '+f.name+(pages.length>1?' p.'+(p+1)+'/'+pages.length:''),Math.round(20+(i/files.length)*60+(p/pages.length)*(60/files.length)));
-        var res=await callGroq(pages[p].b64,pages[p].type,f.name,p+1);
-        rawTexts.push({file:f.name,page:p+1,text:res.raw});
-        for(var k in res.data){var v=res.data[k];if(v&&v!==''&&v!==null&&v!=='null'&&String(v).toLowerCase()!=='null'){if(!extracted[k]||extracted[k]==='')extracted[k]=String(v);}}
-      }
-      setFd(i,'ok');
-    }catch(err){console.error(f.name,err);rawTexts.push({file:f.name,page:1,text:'ERRO: '+err.message});setFd(i,'err');}
-    showPw(true,'',Math.round((i+1)/files.length*90));
-  }
-  showPw(true,'✅ Concluído!',100);
-  setTimeout(function(){showPw(false);btn.classList.remove('loading');btn.disabled=false;renderResult(extracted);setSt('res-st','ok','Extração completa');},500);
-}
-
-async function callGroq(b64,mediaType,fname,pageNum){
-  var model=document.getElementById('model-sel').value;
-  var sys=`Você é um sistema especialista em extração de dados de documentos brasileiros.
-Analise a imagem e extraia TODOS os dados com precisão máxima.
-Retorne APENAS JSON válido, sem markdown, sem blocos de código, sem texto extra antes ou depois.
-Use exatamente estes campos (null se não encontrar no documento):
-{"nome":null,"data_nascimento":null,"local_nascimento":null,"estado_nascimento":null,"nacionalidade":null,"estado_civil":null,"escolaridade":null,"cpf":null,"rg_numero":null,"rg_orgao_emissor":null,"rg_data_emissao":null,"ctps_numero":null,"ctps_serie":null,"ctps_uf":null,"pis_numero":null,"titulo_eleitor":null,"titulo_zona":null,"titulo_secao":null,"reservista_numero":null,"reservista_serie":null,"reservista_categoria":null,"endereco":null,"cep":null,"bairro":null,"estado":null,"cidade":null,"telefone":null,"nome_pai":null,"nome_mae":null,"funcao":null,"banco":null,"agencia":null,"conta":null,"raw_text":null}
-REGRAS CRÍTICAS:
-- CPF: formato XXX.XXX.XXX-XX (ex: 319.786.098-50)
-- Datas: DD/MM/AAAA
-- rg_numero: apenas dígitos e possível X final, sem pontos (ex: 293973-5)
-- pis_numero: todos os dígitos com pontos (ex: 162.33568.01-4)
-- ctps_numero e ctps_serie SEPARADOS
-- raw_text: todo texto legível no documento
-- RG frente: nome, pai, mãe, data nascimento, naturalidade, orgão expedidor
-- RG verso/adicional: CPF, registro geral, data expedição, NIS/PIS, CTPS
-- Comprovante: endereco, cep, bairro, cidade, estado
-- PIS/Caixa Tem: pis_numero (campo NIS/PIS), ctps_numero, data nascimento, naturalidade, filiação
-- CTPS digital: nome, cpf, data_nascimento, nome_mae
-- Vacina: nome, data_nascimento, cpf, nome_mae, nacionalidade
-- Nunca invente dados. Se não encontrar, use null.`;
-
-  var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-    body:JSON.stringify({
-      model:model,max_tokens:1800,temperature:0.1,
-      messages:[
-        {role:'system',content:sys},
-        {role:'user',content:[
-          {type:'image_url',image_url:{url:'data:'+mediaType+';base64,'+b64,detail:'high'}},
-          {type:'text',text:'Arquivo: '+fname+', página '+pageNum+'. Extraia todos os dados.'}
-        ]}
-      ]
-    })
-  });
-
-  if(!resp.ok){
-    var e=await resp.json().catch(function(){return{};});
-    throw new Error('Groq: '+(e.error&&e.error.message?e.error.message:'HTTP '+resp.status));
+  // helpers
+  function showToast(msg) {
+    let t = document.createElement('div');
+    t.className = 'toast-msg';
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2800);
   }
 
-  var data=await resp.json();
-  var text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'{}';
-  var js=text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'').trim();
-  var parsed;
-  try{parsed=JSON.parse(js);}
-  catch(ex){var m=js.match(/\{[\s\S]+\}/);if(m){try{parsed=JSON.parse(m[0]);}catch(e2){parsed={};}}else parsed={};}
-  var raw=parsed.raw_text||text;
-  delete parsed.raw_text;
-  return{data:parsed,raw:raw};
-}
+  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
 
-async function fileToPages(f){if(f.type==='application/pdf')return await pdfToPages(f);return await imgToPage(f);}
-async function imgToPage(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(e){res([{b64:e.target.result.split(',')[1],type:f.type}]);};r.onerror=rej;r.readAsDataURL(f);});}
-async function pdfToPages(f){
-  if(!window.pdfjsLib){await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
-  return new Promise(function(resolve,reject){
-    var r=new FileReader();
-    r.onload=async function(e){
-      try{var pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise;var pages=[];var max=Math.min(pdf.numPages,8);
-        for(var i=1;i<=max;i++){var pg=await pdf.getPage(i);var vp=pg.getViewport({scale:2.2});var cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;pages.push({b64:cv.toDataURL('image/jpeg',0.92).split(',')[1],type:'image/jpeg'});}
-        resolve(pages);
-      }catch(err){reject(err);}
-    };r.onerror=reject;r.readAsArrayBuffer(f);
-  });
-}
-function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
-
-function renderResult(data){
-  document.getElementById('re').style.display='none';
-  var rc=document.getElementById('rc');rc.style.display='block';rc.classList.add('fadeUp');
-  var total=Object.keys(FL).length;
-  var filled=Object.keys(FL).filter(function(k){return data[k]&&data[k]!==''&&data[k]!==null&&data[k]!=='null';}).length;
-  document.getElementById('st-total').textContent=total;
-  document.getElementById('st-filled').textContent=filled;
-  document.getElementById('st-files').textContent=files.length;
-  document.getElementById('st-conf').textContent=Math.round(filled/total*100)+'%';
-  document.getElementById('sbar').style.display='grid';
-  var ac=filled>12?'ok':filled>0?'warn':'err';
-  document.getElementById('al').innerHTML='<div class="alrt '+ac+'">'+( filled>12?'✓':filled>0?'⚠️':'✗' )+' Extração concluída — '+filled+'/'+total+' campos em '+files.length+' arquivo(s).</div>';
-  var html='';
-  for(var sec in FS){
-    html+='<div class="fsh">'+sec+'</div>';
-    FS[sec].forEach(function(k){
-      var v=data[k];var isEmpty=!v||v===''||v===null||v==='null';
-      html+='<div class="fr"><div class="fk">'+(FL[k]||k)+'</div><div class="fv'+(isEmpty?' empty':'')+'" contenteditable="true" data-key="'+k+'" oninput="upd(this)">'+(isEmpty?'— não encontrado —':esc(String(v)))+'</div></div>';
+  // RENDER FILE LIST
+  function renderFileList() {
+    const container = document.getElementById('fileListContainer');
+    if(uploadedFiles.length === 0) { container.innerHTML = '<div style="padding: 12px; text-align:center; color:#AD9F92;">Nenhum arquivo adicionado</div>'; return; }
+    container.innerHTML = uploadedFiles.map((f, idx) => `
+      <div class="file-row">
+        <span>${f.type.includes('pdf') ? '📕' : '🖼️'}</span>
+        <span class="file-name" title="${f.name}">${f.name.length > 35 ? f.name.slice(0,32)+'...' : f.name}</span>
+        <span class="file-size">${(f.size/1024).toFixed(0)} KB</span>
+        <button class="remove-file" data-idx="${idx}">✕</button>
+      </div>
+    `).join('');
+    document.querySelectorAll('.remove-file').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        uploadedFiles.splice(idx, 1);
+        renderFileList();
+        document.getElementById('extractBtn').disabled = uploadedFiles.length === 0;
+      });
     });
   }
-  document.getElementById('fw').innerHTML=html;
-  document.getElementById('jcon').textContent=JSON.stringify(data,null,2);
-}
 
-function upd(el){var k=el.getAttribute('data-key');var v=el.textContent.trim();if(v==='— não encontrado —')v='';extracted[k]=v;el.classList.toggle('empty',!v);document.getElementById('jcon').textContent=JSON.stringify(extracted,null,2);}
+  // drag & drop
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files);
+    files.forEach(f => uploadedFiles.push(f));
+    renderFileList();
+    document.getElementById('extractBtn').disabled = false;
+  });
+  fileInput.addEventListener('change', (e) => {
+    if(e.target.files) {
+      Array.from(e.target.files).forEach(f => uploadedFiles.push(f));
+      renderFileList();
+      document.getElementById('extractBtn').disabled = false;
+      fileInput.value = '';
+    }
+  });
 
-function fillSheet(){
-  if(!origWb){toast('⚠️ Carregue a planilha original primeiro!');return;}
-  if(!extracted||!Object.keys(extracted).filter(function(k){return extracted[k];}).length){toast('⚠️ Extraia os dados primeiro!');return;}
-  var d=extracted;
-  var ws=origWb.Sheets[origSheetName];
-  // Clone profundo
-  var ns={};
-  for(var cell in ws){if(!ws.hasOwnProperty(cell))continue;if(cell[0]==='!')ns[cell]=ws[cell];else if(ws[cell]&&typeof ws[cell]==='object')ns[cell]=JSON.parse(JSON.stringify(ws[cell]));}
-  function set(a,v){if(!v||v===''||v===null||v==='null')return;ns[a]={t:'s',v:String(v)};}
+  // OCR + extração combinada
+  async function runFullExtraction() {
+    if(uploadedFiles.length === 0) return;
+    const btn = document.getElementById('extractBtn');
+    btn.disabled = true; btn.textContent = '⏳ Processando OCR...';
+    document.getElementById('progressArea').style.display = 'block';
+    const fillDiv = document.getElementById('ocrFill');
+    const statusSpan = document.getElementById('ocrStatusMsg');
+    let combined = '';
+    let total = uploadedFiles.length;
+    
+    for(let i=0; i<total; i++) {
+      const file = uploadedFiles[i];
+      statusSpan.innerText = `📄 ${i+1}/${total}: ${file.name}`;
+      fillDiv.style.width = `${(i/total)*50}%`;
+      try {
+        const imageData = await fileToImageData(file);
+        const { data: { text } } = await Tesseract.recognize(imageData, 'por', {
+          logger: m => { if(m.status === 'recognizing text') fillDiv.style.width = `${50 + (i/total)*30 + (m.progress * 30/total)}%`; }
+        });
+        combined += `\n\n--- ${file.name} ---\n${text}`;
+      } catch(err) { combined += `\n\n--- ${file.name} (ERRO OCR) ---\n`; }
+    }
+    fullOcrText = combined;
+    document.getElementById('rawOcrDisplay').innerText = fullOcrText.length > 4000 ? fullOcrText.slice(0,4000)+'... (texto completo disponível)' : fullOcrText;
+    
+    // extração via regex robusta
+    extractedKeyValues = smartExtractFromText(fullOcrText);
+    // Adicionar também texto bruto se necessário
+    extractedKeyValues['_texto_completo'] = fullOcrText.substring(0, 2000);
+    
+    renderExtractedFieldsList();
+    statusSpan.innerText = `✅ Extração concluída (${Object.keys(extractedKeyValues).length-1} campos encontrados)`;
+    fillDiv.style.width = '100%';
+    btn.disabled = false; btn.textContent = '✨ Extrair textos de todos os arquivos';
+    showToast('OCR finalizado! Arraste os campos para a planilha.');
+    if(workbookData) renderSheetPreview(); // refresh preview com possíveis mapeamentos
+  }
 
-  // MAPEAMENTO EXATO DA PLANILHA FIBRA
-  if(d.nome) ns['A3']={t:'s',v:'NOME: '+d.nome};
-  if(d.endereco) set('B4',d.endereco);
-  if(d.cep) ns['A5']={t:'s',v:'CEP: '+d.cep};
-  if(d.bairro) set('C5',d.bairro);
-  if(d.estado) set('F5',d.estado);
-  if(d.telefone) set('B6',d.telefone);
-  if(d.ctps_numero) set('I6',d.ctps_numero);
-  if(d.ctps_serie) set('K6',d.ctps_serie);
-  if(d.data_nascimento) ns['A7']={t:'s',v:'DATA NASCIMENTO: '+d.data_nascimento};
-  if(d.local_nascimento) set('C7',d.local_nascimento); else if(d.cidade) set('C7',d.cidade);
-  if(d.estado_nascimento) set('F7',d.estado_nascimento);
-  if(d.ctps_uf) set('K7',d.ctps_uf);
-  if(d.rg_orgao_emissor) set('I8',d.rg_orgao_emissor);
-  if(d.rg_data_emissao) set('K8',d.rg_data_emissao);
-  if(d.estado_civil) set('B9',d.estado_civil);
-  if(d.nacionalidade) set('C9',d.nacionalidade);
-  if(d.escolaridade) set('E9',d.escolaridade);
-  if(d.rg_numero) set('I10',d.rg_numero);
-  if(d.funcao) set('B11',d.funcao);
-  if(d.ctps_numero) set('I11',d.ctps_numero);
-  if(d.nome_pai) ns['A14']={t:'s',v:'PAI: '+d.nome_pai};
-  if(d.nome_mae) ns['A15']={t:'s',v:'MÃE: '+d.nome_mae};
-  if(d.cpf) set('I15',d.cpf);
-  if(d.titulo_eleitor) set('I19',d.titulo_eleitor);
-  if(d.titulo_zona) set('I21',d.titulo_zona);
-  if(d.titulo_secao) set('K21',d.titulo_secao);
-  if(d.reservista_numero) set('I24',d.reservista_numero);
-  if(d.reservista_serie) set('I26',d.reservista_serie);
-  if(d.reservista_categoria) set('K26',d.reservista_categoria);
-  if(d.pis_numero) set('I29',d.pis_numero);
-  if(d.banco) set('B32',d.banco);
-  if(d.agencia) set('E32',d.agencia);
-  if(d.conta) set('B33',d.conta);
+  async function fileToImageData(file) {
+    return new Promise((resolve, reject) => {
+      if(file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const pdfData = new Uint8Array(e.target.result);
+          const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({scale: 2.0});
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+          resolve(canvas);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width; canvas.height = img.height;
+          canvas.getContext('2d').drawImage(img,0,0);
+          resolve(canvas);
+          URL.revokeObjectURL(img.src);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      }
+    });
+  }
 
-  var owb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(owb,ns,origSheetName);
-  origWb.SheetNames.forEach(function(sn){if(sn!==origSheetName)XLSX.utils.book_append_sheet(owb,origWb.Sheets[sn],sn);});
-  var ts=new Date().toISOString().slice(0,19).replace(/:/g,'-').replace('T','_');
-  var nome=(d.nome||'candidato').split(' ').slice(0,2).join('_');
-  XLSX.writeFile(owb,'Fibra_'+nome+'_'+ts+'.xlsx');
-  toast('✅ Planilha preenchida e baixada!');
-  document.getElementById('al').innerHTML='<div class="alrt ok">✅ Planilha gerada! Estrutura original 100% preservada.</div>';
-}
+  function smartExtractFromText(texto) {
+    let data = {};
+    const upper = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    // nome
+    let nomeMatch = upper.match(/(?:NOME\s*(?:COMPLETO)?\s*:?\s*)([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/);
+    if(nomeMatch) data.nome = capitalize(nomeMatch[1]);
+    // CPF
+    let cpfMatch = texto.match(/(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/);
+    if(cpfMatch) data.cpf = cpfMatch[1].replace(/\D/g,'');
+    // RG
+    let rgMatch = texto.match(/(?:RG|IDENTIDADE)[:\s]*(\d{2,}[\.\-\s]?\d{3,}[\.\-\s]?\d{3}[-\s]?\d?)/i);
+    if(rgMatch) data.rg = rgMatch[1].replace(/[.\-\s]/g,'');
+    // data nasc
+    let dtNasc = texto.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+    if(dtNasc) data.data_nascimento = dtNasc[1];
+    // endereco
+    let endMatch = upper.match(/(?:ENDERE[CÇ]O|END)[:\s]*([A-Z0-9,]{4,}(?:\s+[A-Z0-9,]{2,}){2,})/);
+    if(endMatch) data.endereco = capitalize(endMatch[1]);
+    // telefone
+    let telMatch = texto.match(/\(?\d{2}\)?[\s\-]?\d{4,5}[\s\-]?\d{4}/);
+    if(telMatch) data.telefone = telMatch[0];
+    // pai
+    let paiMatch = upper.match(/PAI[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/);
+    if(paiMatch) data.pai = capitalize(paiMatch[1]);
+    // mae
+    let maeMatch = upper.match(/MÃE|MAE[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})/);
+    if(maeMatch) data.mae = capitalize(maeMatch[1]);
+    // função
+    let funcMatch = upper.match(/(?:FUNÇÃO|CARGO)[:\s]*([A-Z]{2,}(?:\s+[A-Z]{2,}){1,4})/);
+    if(funcMatch) data.funcao = capitalize(funcMatch[1]);
+    // CTPS / PIS
+    let ctpsMatch = texto.match(/CTPS[:\s]*(\d{4,})/i);
+    if(ctpsMatch) data.ctps = ctpsMatch[1];
+    let pisMatch = texto.match(/PIS[:\s]*(\d{3}\.?\d{5}\.?\d{2}-?\d)/i);
+    if(pisMatch) data.pis = pisMatch[1];
+    return data;
+  }
 
-function showPw(show,lbl,pct){var pw=document.getElementById('pw');if(!show){pw.classList.remove('show');return;}pw.classList.add('show');if(lbl)document.getElementById('ptxt').textContent=lbl;if(pct!==undefined){document.getElementById('pfill').style.width=pct+'%';document.getElementById('ppct').textContent=pct+'%';}}
-function setPlog(msg){document.getElementById('plog').textContent=msg;}
-function setFd(i,s){var el=document.getElementById('fd'+i);if(el)el.className='fdot '+s;}
-function setSt(id,t,txt){var el=document.getElementById(id);if(!el)return;el.className='cst '+t;el.textContent=txt;}
-function toggleJSON(){document.getElementById('rbox').classList.remove('open');document.getElementById('jbox').classList.toggle('show');}
-function toggleRaw(){document.getElementById('jbox').classList.remove('show');var rb=document.getElementById('rbox');if(rb.classList.contains('open')){rb.classList.remove('open');}else{rb.classList.add('open');document.getElementById('rcon').textContent=rawTexts.map(function(r){return'=== '+r.file+(r.page>1?' p.'+r.page:'')+' ===\n'+r.text;}).join('\n\n');}}
-function copyJSON(){navigator.clipboard.writeText(JSON.stringify(extracted,null,2)).then(function(){toast('✅ JSON copiado!');}).catch(function(){toast('Erro ao copiar');});}
-var _tt=null;
-function toast(msg){if(_tt)clearTimeout(_tt);var ex=document.querySelector('.toast');if(ex)ex.remove();var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);_tt=setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){t.remove();},300);},3000);}
-function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function capitalize(str) { if(!str) return ''; return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()); }
+
+  function renderExtractedFieldsList() {
+    const container = document.getElementById('extractedFieldsList');
+    const keys = Object.keys(extractedKeyValues).filter(k => k !== '_texto_completo' && extractedKeyValues[k]);
+    if(keys.length === 0) { container.innerHTML = '<div style="padding: 32px; text-align: center;">Nenhum dado extraído</div>'; return; }
+    container.innerHTML = keys.map(key => {
+      let val = extractedKeyValues[key] || '';
+      let shortVal = val.length > 45 ? val.slice(0,42)+'...' : val;
+      return `<div class="field-card" draggable="true" data-fieldkey="${key}" data-fieldval="${escapeHtml(val)}">
+        <span class="field-key">${key.replace(/_/g,' ').toUpperCase()}</span>
+        <span class="field-value">${escapeHtml(shortVal) || '<span class="empty-value">vazio</span>'}</span>
+      </div>`;
+    }).join('');
+    // adicionar dragstart
+    document.querySelectorAll('.field-card').forEach(el => {
+      el.addEventListener('dragstart', (e) => {
+        const key = el.getAttribute('data-fieldkey');
+        const val = extractedKeyValues[key] || '';
+        e.dataTransfer.setData('text/plain', JSON.stringify({ key, value: val }));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+    });
+  }
+
+  // PLANILHA
+  document.getElementById('sheetUpload').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = new Uint8Array(ev.target.result);
+      workbookData = XLSX.read(data, {type: 'array'});
+      currentSheetName = workbookData.SheetNames[0];
+      document.getElementById('sheetLoadMsg').innerHTML = `✅ Planilha carregada: ${file.name} (aba: ${currentSheetName})`;
+      renderSheetPreview();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function renderSheetPreview() {
+    if(!workbookData) return;
+    const sheet = workbookData.Sheets[currentSheetName];
+    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:J30');
+    const matrix = [];
+    for(let R = range.s.r; R <= range.e.r; R++) {
+      let row = [];
+      for(let C = range.s.c; C <= range.e.c; C++) {
+        const addr = XLSX.utils.encode_cell({r:R,c:C});
+        const cell = sheet[addr];
+        let val = cell ? (cell.v !== undefined ? cell.v : '') : '';
+        if(cell && cell.t === 'd') val = new Date(val).toLocaleDateString();
+        row.push({ address: addr, value: val?.toString() || '', raw: cell });
+      }
+      matrix.push(row);
+    }
+    sheetHtmlMatrix = matrix;
+    const htmlTable = `<table style="min-width:100%"><thead><tr>${matrix[0]?.map((_,idx) => `<th>${XLSX.utils.encode_col(idx)}</th>`).join('')}</tr></thead><tbody>
+      ${matrix.map(row => `<tr>${row.map(cell => `<td class="draggable-cell" data-address="${cell.address}" title="Clique para mapeamento rápido" style="cursor:pointer;">${escapeHtml(cell.value) || '&nbsp;'}</td>`).join('')}</tr>`).join('')}
+    </tbody></table>`;
+    document.getElementById('sheetPreviewDiv').innerHTML = htmlTable;
+    // permitir soltar nas células
+    const cells = document.querySelectorAll('.draggable-cell');
+    cells.forEach(td => {
+      td.addEventListener('dragover', (e) => e.preventDefault());
+      td.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const addr = td.getAttribute('data-address');
+        const rawData = e.dataTransfer.getData('text/plain');
+        if(rawData) {
+          try {
+            const { key, value } = JSON.parse(rawData);
+            if(value) {
+              mappingOverrides[addr] = value;
+              showToast(`✅ Mapeado: ${key} → ${addr}`);
+              applyMappingsToWorkbook();
+              renderSheetPreview(); // refresh p/ mostrar valor
+            }
+          } catch(err) {}
+        }
+      });
+      // clique opcional p/ abrir prompt
+      td.addEventListener('click', () => {
+        let currentVal = '';
+        for(let [addr, val] of Object.entries(mappingOverrides)) if(addr === td.getAttribute('data-address')) currentVal = val;
+        let novo = prompt('Valor para célula ' + td.getAttribute('data-address'), currentVal);
+        if(novo !== null && novo !== '') { mappingOverrides[td.getAttribute('data-address')] = novo; applyMappingsToWorkbook(); renderSheetPreview(); }
+      });
+    });
+    applyMappingsToWorkbook();
+  }
+
+  function applyMappingsToWorkbook() {
+    if(!workbookData) return;
+    const sheet = workbookData.Sheets[currentSheetName];
+    for(let [addr, val] of Object.entries(mappingOverrides)) {
+      if(val && val !== '') sheet[addr] = { t: 's', v: val };
+    }
+  }
+
+  function autoMapFields() {
+    if(!workbookData || !extractedKeyValues) { showToast('Carregue a planilha e extraia os dados primeiro'); return; }
+    const autoRules = {
+      'nome': ['NOME','NOME COMPLETO'], 'cpf': ['CPF','CIC'], 'data_nascimento': ['DATA NASCIMENTO','NASCIMENTO'],
+      'endereco': ['ENDEREÇO','END'], 'telefone': ['TELEFONE','FONE'], 'pai': ['PAI','FILIACAO PAI'],
+      'mae': ['MÃE','MAE'], 'funcao': ['FUNÇÃO','CARGO'], 'rg': ['RG','IDENTIDADE'], 'ctps': ['CTPS','CARTEIRA TRABALHO']
+    };
+    const sheet = workbookData.Sheets[currentSheetName];
+    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:AA30');
+    for(let R = range.s.r; R <= range.e.r; R++) {
+      for(let C = range.s.c; C <= range.e.c; C++) {
+        const addr = XLSX.utils.encode_cell({r:R,c:C});
+        let cell = sheet[addr];
+        let cellText = cell && cell.v ? String(cell.v).toLowerCase() : '';
+        for(let [field, keywords] of Object.entries(autoRules)) {
+          let valueToMap = extractedKeyValues[field];
+          if(valueToMap && !mappingOverrides[addr]) {
+            if(keywords.some(kw => cellText.includes(kw.toLowerCase()))) {
+              mappingOverrides[addr] = valueToMap;
+            }
+          }
+        }
+      }
+    }
+    applyMappingsToWorkbook();
+    renderSheetPreview();
+    showToast('Mapeamento automático concluído (campos comuns)');
+  }
+
+  function downloadMappedSheet() {
+    if(!workbookData) { showToast('Nenhuma planilha carregada'); return; }
+    applyMappingsToWorkbook();
+    const wbOut = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wbOut, workbookData.Sheets[currentSheetName], currentSheetName);
+    if(workbookData.SheetNames.length > 1) {
+      for(let i=1;i<workbookData.SheetNames.length;i++) XLSX.utils.book_append_sheet(wbOut, workbookData.Sheets[workbookData.SheetNames[i]], workbookData.SheetNames[i]);
+    }
+    XLSX.writeFile(wbOut, `Fibra_preenchida_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.xlsx`);
+    showToast('✅ Planilha baixada com os mapeamentos');
+  }
+
+  document.getElementById('extractBtn').addEventListener('click', runFullExtraction);
+  document.getElementById('autoMapBtn').addEventListener('click', autoMapFields);
+  document.getElementById('downloadMappedBtn').addEventListener('click', downloadMappedSheet);
+  document.getElementById('copyRawBtn').addEventListener('click', () => { navigator.clipboard.writeText(fullOcrText); showToast('Texto OCR copiado'); });
+  renderFileList();
 </script>
 </body>
 </html>
